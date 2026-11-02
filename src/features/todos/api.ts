@@ -114,6 +114,6 @@ export const useClearCompleted = (listId: ListId) => {
     ...optimisticHandlers<Todo[], void>(queryClient, queryKeys.todos.byList(listId), (current) =>
       current.filter((todo) => !todo.completed),
     ),
-    meta: { successMessage: 'Completed tasks cleared' },
+    meta: { successMessage: 'list.completedCleared' },
   });
 };

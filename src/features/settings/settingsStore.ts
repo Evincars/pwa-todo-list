@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Priority } from '@/domain/types';
 import type { TodoFilter, TodoSortKey } from '@/domain/todoQuery';
+import type { LanguagePreference } from '@/i18n/i18n';
 import type { CalendarSpan } from '@/shared/ui/AgendaCalendar';
 import type { RadiusOption } from '@/theme/createAppTheme';
 import type { ThemeId } from '@/theme/presets';
@@ -21,6 +22,8 @@ export interface ListViewPrefs {
 }
 
 export interface Settings {
+  /** `system` follows the OS / browser language. */
+  language: LanguagePreference;
   colorScheme: ColorSchemePreference;
   themeId: ThemeId;
   radius: RadiusOption;
@@ -46,6 +49,7 @@ interface SettingsState extends Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
+  language: 'system',
   colorScheme: 'system',
   themeId: 'classic',
   radius: 'md',

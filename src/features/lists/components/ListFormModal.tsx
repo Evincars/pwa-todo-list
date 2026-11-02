@@ -2,6 +2,7 @@ import { Button, Input, Stack, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useEffect } from 'react';
 import { LIST_COLORS, type CreateListInput, type TodoList } from '@/domain/types';
+import { useTranslation } from '@/i18n';
 import { ResponsiveModal, SwatchPicker } from '@/shared/ui';
 import { DEFAULT_LIST_ICON } from '../listIcons';
 import { ListIconPicker } from './ListIconPicker';
@@ -19,9 +20,10 @@ export interface ListFormModalProps {
 const DEFAULT_VALUES: CreateListInput = { title: '', icon: DEFAULT_LIST_ICON, color: 'blue' };
 
 export const ListFormModal = ({ opened, onClose, list, loading, onSubmit }: ListFormModalProps) => {
+  const { t } = useTranslation();
   const form = useForm<CreateListInput>({
     initialValues: DEFAULT_VALUES,
-    validate: { title: (value) => (value.trim() ? null : 'Give your list a name') },
+    validate: { title: (value) => (value.trim() ? null : t('lists.form.nameRequired')) },
   });
 
   // Re-initialize every time the modal opens.
@@ -31,31 +33,31 @@ export const ListFormModal = ({ opened, onClose, list, loading, onSubmit }: List
   }, [opened, list]);
 
   return (
-    <ResponsiveModal opened={opened} onClose={onClose} title={list ? 'Edit list' : 'New list'}>
+    <ResponsiveModal opened={opened} onClose={onClose} title={list ? t('lists.editList') : t('lists.newList')}>
       <form onSubmit={form.onSubmit(onSubmit)}>
         <Stack>
           <TextInput
-            label="Name"
-            placeholder="e.g. Groceries"
+            label={t('lists.form.name')}
+            placeholder={t('lists.form.namePlaceholder')}
             data-autofocus
             maxLength={60}
             leftSection={<ListIconView icon={form.values.icon} color={form.values.color} size={18} />}
             {...form.getInputProps('title')}
           />
-          <Input.Wrapper label="Icon">
+          <Input.Wrapper label={t('lists.form.icon')}>
             <ListIconPicker value={form.values.icon} color={form.values.color} onChange={(icon) => form.setFieldValue('icon', icon)} />
           </Input.Wrapper>
-          <Input.Wrapper label="Color">
+          <Input.Wrapper label={t('lists.form.color')}>
             <SwatchPicker
               values={LIST_COLORS}
               value={form.values.color}
               onChange={(color) => form.setFieldValue('color', color)}
-              aria-label="List color"
+              aria-label={t('lists.form.colorAria')}
               size={28}
             />
           </Input.Wrapper>
           <Button type="submit" loading={loading} fullWidth mt="xs" size="md">
-            {list ? 'Save changes' : 'Create list'}
+            {list ? t('lists.form.save') : t('lists.form.create')}
           </Button>
         </Stack>
       </form>

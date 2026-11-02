@@ -39,17 +39,17 @@ export class LocalInvitationsService implements InvitationsService {
 
     const email = input.kind === 'email' ? (input.email ?? '').trim().toLowerCase() : null;
     if (input.kind === 'email') {
-      if (!email || !EMAIL_PATTERN.test(email)) throw new AppError('invalid-argument', 'Enter a valid e-mail address');
-      if (email === user.email) throw new AppError('invalid-argument', 'You already own this list');
+      if (!email || !EMAIL_PATTERN.test(email)) throw new AppError('invalid-argument', 'invalidEmail');
+      if (email === user.email) throw new AppError('invalid-argument', 'alreadyOwner');
       if (Object.values(list.members).some((member) => member.email === email)) {
-        throw new AppError('failed-precondition', 'This person is already a member');
+        throw new AppError('failed-precondition', 'alreadyMember');
       }
       const pending = await this.store.query<Invitation>(paths.invitations, [
         where('listId', '==', listId),
         where('email', '==', email),
         where('status', '==', 'pending'),
       ]);
-      if (pending.length) throw new AppError('failed-precondition', 'This person has already been invited');
+      if (pending.length) throw new AppError('failed-precondition', 'alreadyInvited');
     }
 
     const now = dayjs();
@@ -139,7 +139,7 @@ export class LocalInvitationsService implements InvitationsService {
     const user = requireUser(this.auth);
     const invitation = await this.fetchInvitation(invitationId);
     if (invitation.kind !== 'email' || invitation.email !== user.email) {
-      throw new AppError('permission-denied', 'This invitation is not addressed to you');
+      throw new AppError('permission-denied', 'invitationNotForYou');
     }
     await this.store.update<Invitation>(paths.invitation(invitationId), { status: 'declined' });
   }
@@ -157,23 +157,23 @@ export class LocalInvitationsService implements InvitationsService {
 
   private assertUsable(invitation: Invitation, user: UserProfile) {
     if (invitation.status !== 'pending') {
-      throw new AppError('failed-precondition', `This invitation was ${invitation.status}`);
+      throw new AppError('failed-precondition', 'invitationStatus', { status: invitation.status });
     }
-    if (!isActive(invitation)) throw new AppError('failed-precondition', 'This invitation has expired');
+    if (!isActive(invitation)) throw new AppError('failed-precondition', 'invitationExpired');
     if (invitation.kind === 'email' && invitation.email !== user.email) {
-      throw new AppError('permission-denied', `This invitation was sent to ${invitation.email}`);
+      throw new AppError('permission-denied', 'invitationForOther', { email: invitation.email ?? '' });
     }
   }
 
   private async fetchInvitation(invitationId: InvitationId) {
     const invitation = await this.store.get<Invitation>(paths.invitation(invitationId));
-    if (!invitation) throw new AppError('not-found', 'Invitation not found');
+    if (!invitation) throw new AppError('not-found', 'invitationNotFound');
     return invitation;
   }
 
   private async fetchList(listId: ListId) {
     const list = await this.store.get<TodoList>(paths.list(listId));
-    if (!list) throw new AppError('not-found', 'This list does not exist or was deleted');
+    if (!list) throw new AppError('not-found', 'listNotFound');
     return list;
   }
 }

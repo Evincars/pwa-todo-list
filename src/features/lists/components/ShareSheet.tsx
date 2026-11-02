@@ -15,16 +15,18 @@ import {
 import { useForm } from '@mantine/form';
 import { IconCheck, IconCopy, IconLink, IconLogout, IconMail, IconShare, IconUserMinus, IconX } from '@tabler/icons-react';
 import { useNavigate } from '@tanstack/react-router';
-import dayjs from 'dayjs';
 import type { ReactNode } from 'react';
-import { ACCESS_LABEL, canManage, getListAccess } from '@/domain/permissions';
+import { canManage, getListAccess } from '@/domain/permissions';
 import type { Invitation, MemberPermission, TodoList } from '@/domain/types';
 import { useCurrentUser } from '@/features/auth/authStore';
 import { buildInviteUrl, useCreateInvitation, useListInvitationsQuery, useRevokeInvitation } from '@/features/invitations/api';
+import { useTranslation } from '@/i18n';
+import { formatDate } from '@/lib/dates';
 import { notify } from '@/lib/notify';
+import dayjs from 'dayjs';
 import { confirm, ResponsiveModal, UserAvatar, type AvatarUser } from '@/shared/ui';
 import { useLeaveList, useRemoveMember, useSetMemberPermission } from '../api';
-import { PERMISSION_OPTIONS, PermissionSelect } from './PermissionSelect';
+import { PERMISSIONS, PermissionSelect } from './PermissionSelect';
 
 export interface ShareSheetProps {
   list: TodoList;
@@ -48,10 +50,11 @@ const PersonRow = ({ user, subtitle, right }: { user: AvatarUser & { email?: str
 );
 
 const InviteByEmail = ({ list }: { list: TodoList }) => {
+  const { t } = useTranslation();
   const createInvitation = useCreateInvitation(list.id);
   const form = useForm<{ email: string; permission: MemberPermission }>({
     initialValues: { email: '', permission: 'read' },
-    validate: { email: (value) => (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim()) ? null : 'Enter a valid e-mail') },
+    validate: { email: (value) => (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim()) ? null : t('auth.emailInvalid')) },
   });
 
   return (
@@ -61,7 +64,7 @@ const InviteByEmail = ({ list }: { list: TodoList }) => {
           { kind: 'email', ...values },
           {
             onSuccess: () => {
-              notify.success(`Invitation sent to ${values.email}`);
+              notify.success(t('share.sent', { email: values.email }));
               form.reset();
             },
           },
@@ -71,20 +74,20 @@ const InviteByEmail = ({ list }: { list: TodoList }) => {
       <Stack gap="xs">
         <Group align="flex-start" gap="xs" wrap="nowrap">
           <TextInput
-            placeholder="friend@example.com"
+            placeholder={t('share.emailPlaceholder')}
             type="email"
             leftSection={<IconMail size={16} />}
             style={{ flex: 1 }}
-            aria-label="E-mail address"
+            aria-label={t('share.emailAria')}
             {...form.getInputProps('email')}
           />
           <PermissionSelect value={form.values.permission} onChange={(permission) => form.setFieldValue('permission', permission)} />
         </Group>
         <Button type="submit" loading={createInvitation.isPending}>
-          Send invitation
+          {t('share.send')}
         </Button>
         <Text size="xs" c="dimmed">
-          They'll see the invitation after signing in with this e-mail.
+          {t('share.emailHint')}
         </Text>
       </Stack>
     </form>
@@ -92,34 +95,35 @@ const InviteByEmail = ({ list }: { list: TodoList }) => {
 };
 
 const InviteByLink = ({ list, links }: { list: TodoList; links: Invitation[] }) => {
+  const { t } = useTranslation();
   const createInvitation = useCreateInvitation(list.id);
   const revoke = useRevokeInvitation(list.id);
 
   const share = async (invitation: Invitation) => {
     const url = buildInviteUrl(invitation.id);
     if (navigator.share) {
-      await navigator.share({ title: list.title, text: `Join my list "${list.title}"`, url }).catch(() => undefined);
+      await navigator.share({ title: list.title, text: t('share.joinMyList', { title: list.title }), url }).catch(() => undefined);
     } else {
       await navigator.clipboard.writeText(url);
-      notify.success('Link copied');
+      notify.success(t('share.linkCopied'));
     }
   };
 
   return (
     <Stack gap="sm">
       <Text size="sm" c="dimmed">
-        Anyone with the link can join after signing in. Links expire after 14 days.
+        {t('share.linkDescription')}
       </Text>
       <Group gap="xs" grow>
-        {PERMISSION_OPTIONS.map((option) => (
+        {PERMISSIONS.map((permission) => (
           <Button
-            key={option.value}
+            key={permission}
             variant="light"
             leftSection={<IconLink size={16} />}
-            loading={createInvitation.isPending && createInvitation.variables.permission === option.value}
-            onClick={() => createInvitation.mutate({ kind: 'link', permission: option.value }, { onSuccess: share })}
+            loading={createInvitation.isPending && createInvitation.variables.permission === permission}
+            onClick={() => createInvitation.mutate({ kind: 'link', permission }, { onSuccess: share })}
           >
-            {option.label} link
+            {t(`share.linkButton.${permission}`)}
           </Button>
         ))}
       </Group>
@@ -128,25 +132,25 @@ const InviteByLink = ({ list, links }: { list: TodoList; links: Invitation[] }) 
         return (
           <Group key={invitation.id} gap="xs" wrap="nowrap">
             <Badge variant="light" color={invitation.permission === 'write' ? 'teal' : 'gray'} style={{ flexShrink: 0 }}>
-              {invitation.permission === 'write' ? 'Edit' : 'View'}
+              {t(`share.linkBadge.${invitation.permission}`)}
             </Badge>
             <Text size="xs" c="dimmed" style={{ flex: 1, minWidth: 0 }} truncate>
               {url}
             </Text>
             <CopyButton value={url}>
               {({ copied, copy }) => (
-                <Tooltip label={copied ? 'Copied' : 'Copy link'}>
-                  <ActionIcon color={copied ? 'teal' : 'gray'} onClick={copy} aria-label="Copy link">
+                <Tooltip label={copied ? t('share.copied') : t('share.copyLink')}>
+                  <ActionIcon color={copied ? 'teal' : 'gray'} onClick={copy} aria-label={t('share.copyLink')}>
                     {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
                   </ActionIcon>
                 </Tooltip>
               )}
             </CopyButton>
-            <ActionIcon color="gray" onClick={() => void share(invitation)} aria-label="Share link">
+            <ActionIcon color="gray" onClick={() => void share(invitation)} aria-label={t('share.shareLink')}>
               <IconShare size={16} />
             </ActionIcon>
-            <Tooltip label="Revoke">
-              <ActionIcon color="red" onClick={() => revoke.mutate(invitation.id)} aria-label="Revoke link">
+            <Tooltip label={t('share.revoke')}>
+              <ActionIcon color="red" onClick={() => revoke.mutate(invitation.id)} aria-label={t('share.revokeLink')}>
                 <IconX size={16} />
               </ActionIcon>
             </Tooltip>
@@ -158,6 +162,7 @@ const InviteByLink = ({ list, links }: { list: TodoList; links: Invitation[] }) 
 };
 
 export const ShareSheet = ({ list, opened, onClose }: ShareSheetProps) => {
+  const { t } = useTranslation();
   const user = useCurrentUser();
   const navigate = useNavigate();
   const access = getListAccess(list, user.id);
@@ -174,9 +179,9 @@ export const ShareSheet = ({ list, opened, onClose }: ShareSheetProps) => {
 
   const handleRemove = async (member: (typeof members)[number]) => {
     const ok = await confirm({
-      title: `Remove ${member.displayName}?`,
-      message: 'They will immediately lose access to this list.',
-      confirmLabel: 'Remove',
+      title: t('share.removeConfirm.title', { name: member.displayName }),
+      message: t('share.removeConfirm.message'),
+      confirmLabel: t('common.remove'),
       danger: true,
     });
     if (ok) removeMember.mutate(member.userId);
@@ -184,25 +189,25 @@ export const ShareSheet = ({ list, opened, onClose }: ShareSheetProps) => {
 
   const handleLeave = async () => {
     const ok = await confirm({
-      title: 'Leave this list?',
-      message: `You'll need a new invitation from ${list.owner.displayName} to rejoin.`,
-      confirmLabel: 'Leave',
+      title: t('list.leaveConfirm.title'),
+      message: t('list.leaveConfirm.message', { owner: list.owner.displayName }),
+      confirmLabel: t('common.leave'),
       danger: true,
     });
     if (ok) leave.mutate(list.id, { onSuccess: () => void navigate({ to: '/', replace: true }) });
   };
 
   return (
-    <ResponsiveModal opened={opened} onClose={onClose} title={`Share “${list.title}”`}>
+    <ResponsiveModal opened={opened} onClose={onClose} title={t('share.title', { title: list.title })}>
       <Stack gap="lg">
         {isOwner ? (
           <Tabs defaultValue="email" variant="pills" radius="xl">
             <Tabs.List grow mb="md">
               <Tabs.Tab value="email" leftSection={<IconMail size={16} />}>
-                By e-mail
+                {t('share.byEmail')}
               </Tabs.Tab>
               <Tabs.Tab value="link" leftSection={<IconLink size={16} />}>
-                Invite link
+                {t('share.byLink')}
               </Tabs.Tab>
             </Tabs.List>
             <Tabs.Panel value="email">
@@ -214,23 +219,22 @@ export const ShareSheet = ({ list, opened, onClose }: ShareSheetProps) => {
           </Tabs>
         ) : (
           <Alert variant="light" color={access === 'write' ? 'teal' : 'gray'} radius="md">
-            You {access === 'write' ? 'can edit' : 'can view'} this list. Only {list.owner.displayName} can invite people and change
-            permissions.
+            {t(access === 'write' ? 'share.notOwner.write' : 'share.notOwner.read', { owner: list.owner.displayName })}
           </Alert>
         )}
 
         <Stack gap="sm">
-          <Divider label={`People with access · ${members.length + 1}`} labelPosition="left" />
+          <Divider label={t('share.peopleWithAccess', { count: members.length + 1 })} labelPosition="left" />
           <PersonRow
             user={list.owner}
-            subtitle={list.owner.id === user.id ? 'You' : list.owner.email}
-            right={<Badge variant="light">{ACCESS_LABEL.owner}</Badge>}
+            subtitle={list.owner.id === user.id ? t('common.you') : list.owner.email}
+            right={<Badge variant="light">{t('access.owner')}</Badge>}
           />
           {members.map((member) => (
             <PersonRow
               key={member.userId}
               user={member}
-              subtitle={member.userId === user.id ? `You · ${member.email}` : member.email}
+              subtitle={member.userId === user.id ? t('share.youWithEmail', { email: member.email }) : member.email}
               right={
                 isOwner ? (
                   <Group gap={4} wrap="nowrap">
@@ -238,16 +242,16 @@ export const ShareSheet = ({ list, opened, onClose }: ShareSheetProps) => {
                       size="xs"
                       value={member.permission}
                       onChange={(permission) => setPermission.mutate({ userId: member.userId, permission })}
-                      aria-label={`Permission for ${member.displayName}`}
+                      aria-label={t('share.permissionFor', { name: member.displayName })}
                     />
-                    <Tooltip label="Remove">
-                      <ActionIcon color="red" onClick={() => void handleRemove(member)} aria-label={`Remove ${member.displayName}`}>
+                    <Tooltip label={t('common.remove')}>
+                      <ActionIcon color="red" onClick={() => void handleRemove(member)} aria-label={t('share.removeName', { name: member.displayName })}>
                         <IconUserMinus size={16} />
                       </ActionIcon>
                     </Tooltip>
                   </Group>
                 ) : (
-                  <Badge variant="default">{ACCESS_LABEL[member.permission]}</Badge>
+                  <Badge variant="default">{t(`access.${member.permission}`)}</Badge>
                 )
               }
             />
@@ -258,14 +262,14 @@ export const ShareSheet = ({ list, opened, onClose }: ShareSheetProps) => {
               <PersonRow
                 key={invitation.id}
                 user={{ displayName: invitation.email ?? '' }}
-                subtitle={`Invited ${dayjs(invitation.createdAt).format('D MMM')} · ${ACCESS_LABEL[invitation.permission]}`}
+                subtitle={t('share.invitedOn', { date: formatDate(dayjs(invitation.createdAt), 'dayMonth'), access: t(`access.${invitation.permission}`) })}
                 right={
                   <Group gap={4} wrap="nowrap">
                     <Badge variant="outline" color="yellow">
-                      Pending
+                      {t('share.pending')}
                     </Badge>
-                    <Tooltip label="Revoke invitation">
-                      <ActionIcon color="gray" onClick={() => revoke.mutate(invitation.id)} aria-label="Revoke invitation">
+                    <Tooltip label={t('share.revokeInvitation')}>
+                      <ActionIcon color="gray" onClick={() => revoke.mutate(invitation.id)} aria-label={t('share.revokeInvitation')}>
                         <IconX size={16} />
                       </ActionIcon>
                     </Tooltip>
@@ -277,7 +281,7 @@ export const ShareSheet = ({ list, opened, onClose }: ShareSheetProps) => {
 
         {!isOwner && (
           <Button variant="light" color="red" leftSection={<IconLogout size={16} />} onClick={() => void handleLeave()} loading={leave.isPending}>
-            Leave list
+            {t('list.menu.leave')}
           </Button>
         )}
       </Stack>

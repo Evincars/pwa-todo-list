@@ -97,7 +97,7 @@ export class LocalStorageDocumentStore implements DocumentStore {
     // Validate first so the batch is all-or-nothing.
     for (const op of operations) {
       if (op.type === 'update' && !this.storage.getItem(this.key(op.path))) {
-        throw new AppError('not-found', `Document ${op.path} does not exist`);
+        throw new AppError('not-found', 'documentNotFound', { path: op.path });
       }
     }
     for (const op of operations) {
@@ -145,7 +145,7 @@ export class LocalStorageDocumentStore implements DocumentStore {
 
   private applyUpdate(path: string, data: DocumentData) {
     const existing = this.read(path);
-    if (!existing) throw new AppError('not-found', `Document ${path} does not exist`);
+    if (!existing) throw new AppError('not-found', 'documentNotFound', { path });
     this.write(path, { ...existing, ...data });
   }
 

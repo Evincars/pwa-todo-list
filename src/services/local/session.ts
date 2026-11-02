@@ -4,7 +4,7 @@ import type { AuthService } from '../types';
 
 export const requireUser = (auth: AuthService): UserProfile => {
   const user = auth.getCurrentUser();
-  if (!user) throw new AppError('unauthenticated', 'You need to sign in first');
+  if (!user) throw new AppError('unauthenticated', 'signInRequired');
   return user;
 };
 

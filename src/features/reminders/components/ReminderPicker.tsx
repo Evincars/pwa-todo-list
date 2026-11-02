@@ -5,14 +5,25 @@ import { useState, type ReactElement, type ReactNode } from 'react';
 import type { ISODateString } from '@/domain/types';
 import { DateTimeSelector, type DateTimeSelection } from '@/features/todos/components/DateTimeSelector';
 import { useSettingsStore } from '@/features/settings/settingsStore';
-import { formatTime, type DueValue } from '@/lib/dates';
-import { getQuickReminderOptions, suggestReminder, type QuickReminderKey } from '@/lib/reminderTime';
+import { formatDate, formatTime, type DueValue } from '@/lib/dates';
+import { t as translate, useTranslation } from '@/i18n';
+import { getQuickReminderOptions, suggestReminder, type QuickReminderKey, type ReminderLead } from '@/lib/reminderTime';
 import { OptionList, ResponsiveOverlay, type OptionItem } from '@/shared/ui';
 
 const QUICK_ICONS: Record<QuickReminderKey, ReactNode> = {
   laterToday: <IconClockHour4 size={18} />,
   tomorrow: <IconSunset2 size={18} />,
   nextWeek: <IconCalendarEvent size={18} />,
+};
+
+/** "3 hours before", "The evening before", "That day, 9:00"… */
+export const formatReminderLead = (lead: ReminderLead): string => {
+  if (lead.kind === 'eveningBefore') return translate('reminders.lead.eveningBefore');
+  if (lead.kind === 'thatDay') return translate('reminders.lead.thatDay', { time: `${lead.hour}:00` });
+  const hours = Math.floor(lead.minutes / 60);
+  const minutes = lead.minutes % 60;
+  if (!hours) return translate('reminders.lead.minutes', { count: minutes });
+  return minutes ? translate('reminders.lead.hoursMinutes', { hours, minutes }) : translate('reminders.lead.hours', { count: hours });
 };
 
 type PickerAction = { type: 'at'; at: Dayjs } | { type: 'custom' } | { type: 'clear' };
@@ -30,6 +41,7 @@ export interface ReminderPickerProps {
 
 /** "Remind me": suggested time from the due date, MS To Do quick picks, or a custom date + clock dial. */
 export const ReminderPicker = ({ value, due, onChange, opened, onClose, target }: ReminderPickerProps) => {
+  const { t } = useTranslation();
   const timeFormat = useSettingsStore((state) => state.timeFormat);
   const [view, setView] = useState<'quick' | 'custom'>('quick');
 
@@ -43,25 +55,26 @@ export const ReminderPicker = ({ value, due, onChange, opened, onClose, target }
   };
 
   const now = dayjs();
-  const hint = (date: Dayjs) => (date.isSame(now, 'day') ? formatTime(date, timeFormat) : `${date.format('ddd')} ${formatTime(date, timeFormat)}`);
+  const hint = (date: Dayjs) =>
+    date.isSame(now, 'day') ? formatTime(date, timeFormat) : `${formatDate(date, 'weekdayShort')} ${formatTime(date, timeFormat)}`;
   const suggestion = suggestReminder(due, now);
 
   const options: OptionItem<PickerAction>[] = [];
   if (suggestion) {
     options.push({
       value: { type: 'at', at: suggestion.at },
-      label: suggestion.label,
-      description: 'Suggested from the due date',
+      label: formatReminderLead(suggestion.lead),
+      description: t('reminders.suggested'),
       icon: <IconSparkles size={18} />,
       hint: hint(suggestion.at),
     });
   }
   for (const option of getQuickReminderOptions(now)) {
-    options.push({ value: { type: 'at', at: option.at }, label: option.label, icon: QUICK_ICONS[option.key], hint: hint(option.at) });
+    options.push({ value: { type: 'at', at: option.at }, label: t(`reminders.quick.${option.key}`), icon: QUICK_ICONS[option.key], hint: hint(option.at) });
   }
 
-  const moreOptions: OptionItem<PickerAction>[] = [{ value: { type: 'custom' }, label: 'Pick a date & time', icon: <IconCalendarMonth size={18} /> }];
-  if (value) moreOptions.push({ value: { type: 'clear' }, label: 'Remove reminder', icon: <IconBellOff size={18} />, color: 'red' });
+  const moreOptions: OptionItem<PickerAction>[] = [{ value: { type: 'custom' }, label: t('due.pick'), icon: <IconCalendarMonth size={18} /> }];
+  if (value) moreOptions.push({ value: { type: 'clear' }, label: t('reminders.remove'), icon: <IconBellOff size={18} />, color: 'red' });
 
   const handleSelect = (action: PickerAction) => {
     if (action.type === 'at') commit(action.at.toISOString());
@@ -78,7 +91,7 @@ export const ReminderPicker = ({ value, due, onChange, opened, onClose, target }
       opened={opened}
       onClose={close}
       target={target}
-      title={view === 'quick' ? 'Remind me' : 'Reminder date & time'}
+      title={view === 'quick' ? t('reminders.title') : t('reminders.customTitle')}
       width={view === 'quick' ? 300 : 320}
     >
       {view === 'quick' ? (
@@ -90,7 +103,7 @@ export const ReminderPicker = ({ value, due, onChange, opened, onClose, target }
       ) : (
         <DateTimeSelector
           initial={initialSelection}
-          validate={(selection) => (toDate(selection).isAfter(dayjs()) ? null : 'Pick a time in the future')}
+          validate={(selection) => (toDate(selection).isAfter(dayjs()) ? null : t('dateTime.futureOnly'))}
           onSubmit={(selection) => commit(toDate(selection).toISOString())}
           onCancel={() => setView('quick')}
         />

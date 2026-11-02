@@ -1,13 +1,14 @@
-import { Button, Chip, Divider, Drawer, Group, Input, Stack, Text, Textarea } from '@mantine/core';
+import { Button, Chip, Collapse, Divider, Drawer, Group, Input, Paper, Stack, Text, Textarea } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconBell, IconCalendarDue, IconTrash, IconX } from '@tabler/icons-react';
+import { IconAlertTriangle, IconBell, IconCalendarDue, IconTrash, IconX } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import { useState } from 'react';
 import { PRIORITY_META, PRIORITY_ORDER } from '@/domain/priority';
 import type { ISODateString, Priority, Reminder, Todo, UpdateTodoInput } from '@/domain/types';
 import { ReminderPicker } from '@/features/reminders/components/ReminderPicker';
 import { useSettingsStore } from '@/features/settings/settingsStore';
-import { formatDue, formatReminder, NO_DUE } from '@/lib/dates';
+import { useTranslation } from '@/i18n';
+import { formatDate, formatDue, formatReminder, NO_DUE } from '@/lib/dates';
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import { BottomSheet, CheckCircle } from '@/shared/ui';
 import { DueDatePicker } from './DueDatePicker';
@@ -18,6 +19,7 @@ export interface TodoDetailsSheetProps {
   canWrite: boolean;
   onClose: () => void;
   onUpdate: (todo: Todo, input: UpdateTodoInput) => void;
+  /** Called once the user confirmed (when "Confirm before deleting" is on). */
   onDelete: (todo: Todo) => void;
   /** The current user's personal reminder of the task. */
   reminder: Reminder | undefined;
@@ -32,7 +34,10 @@ const TodoDetails = ({
   reminder,
   onReminderChange,
 }: Omit<TodoDetailsSheetProps, 'todo' | 'onClose'> & { todo: Todo }) => {
+  const { t } = useTranslation();
   const timeFormat = useSettingsStore((state) => state.timeFormat);
+  const confirmDelete = useSettingsStore((state) => state.confirmDelete);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [title, setTitle] = useState(todo.title);
   const [notes, setNotes] = useState(todo.notes);
   const [dueOpened, dueHandlers] = useDisclosure(false);
@@ -49,6 +54,8 @@ const TodoDetails = ({
 
   const commitNotes = () => notes !== todo.notes && update({ notes });
 
+  const requestDelete = () => (confirmDelete ? setConfirmingDelete(true) : onDelete(todo));
+
   return (
     <Stack gap="md">
       <Group align="flex-start" wrap="nowrap" gap="sm">
@@ -59,7 +66,7 @@ const TodoDetails = ({
             disabled={!canWrite}
             size={26}
             color={todo.priority !== 'none' ? PRIORITY_META[todo.priority].color : undefined}
-            label="Completed"
+            label={t('details.completed')}
           />
         </div>
         <Textarea
@@ -77,7 +84,7 @@ const TodoDetails = ({
           minRows={1}
           maxLength={200}
           variant="unstyled"
-          aria-label="Title"
+          aria-label={t('details.titleAria')}
           style={{ flex: 1 }}
           styles={{
             input: {
@@ -89,7 +96,7 @@ const TodoDetails = ({
         />
       </Group>
 
-      <Input.Wrapper label="Priority">
+      <Input.Wrapper label={t('priority.label')}>
         <Chip.Group<false, Priority> value={todo.priority} onChange={(priority) => update({ priority })}>
           <Group gap={6} mt={6}>
             {PRIORITY_ORDER.map((priority) => (
@@ -102,14 +109,14 @@ const TodoDetails = ({
                 disabled={!canWrite}
                 icon={<PriorityFlag priority={priority} size={12} />}
               >
-                {PRIORITY_META[priority].label}
+                {t(`priority.${priority}`)}
               </Chip>
             ))}
           </Group>
         </Chip.Group>
       </Input.Wrapper>
 
-      <Input.Wrapper label="Due">
+      <Input.Wrapper label={t('details.due')}>
         <Group gap="xs" mt={6}>
           <DueDatePicker
             value={todo}
@@ -123,19 +130,19 @@ const TodoDetails = ({
                 onClick={dueHandlers.toggle}
                 disabled={!canWrite}
               >
-                {todo.dueAt ? formatDue(todo, timeFormat) : 'Add due date'}
+                {todo.dueAt ? formatDue(todo, timeFormat) : t('details.addDue')}
               </Button>
             }
           />
           {todo.dueAt && canWrite && (
-            <Button variant="subtle" color="gray" px="xs" onClick={() => update(NO_DUE)} aria-label="Remove due date">
+            <Button variant="subtle" color="gray" px="xs" onClick={() => update(NO_DUE)} aria-label={t('details.removeDue')}>
               <IconX size={16} />
             </Button>
           )}
         </Group>
       </Input.Wrapper>
 
-      <Input.Wrapper label="Remind me" description="Personal – other members aren't notified">
+      <Input.Wrapper label={t('details.remindMe')} description={t('details.remindPersonal')}>
         <Group gap="xs" mt={6}>
           <ReminderPicker
             value={reminder?.remindAt ?? null}
@@ -151,12 +158,12 @@ const TodoDetails = ({
                 onClick={reminderHandlers.toggle}
                 td={reminderPassed ? 'line-through' : undefined}
               >
-                {reminder ? formatReminder(reminder.remindAt, timeFormat) : 'Add reminder'}
+                {reminder ? formatReminder(reminder.remindAt, timeFormat) : t('details.addReminder')}
               </Button>
             }
           />
           {reminder && (
-            <Button variant="subtle" color="gray" px="xs" onClick={() => onReminderChange(todo, null)} aria-label="Remove reminder">
+            <Button variant="subtle" color="gray" px="xs" onClick={() => onReminderChange(todo, null)} aria-label={t('details.removeReminder')}>
               <IconX size={16} />
             </Button>
           )}
@@ -164,8 +171,8 @@ const TodoDetails = ({
       </Input.Wrapper>
 
       <Textarea
-        label="Notes"
-        placeholder={canWrite ? 'Add a note' : 'No notes'}
+        label={t('details.notes')}
+        placeholder={canWrite ? t('details.notesPlaceholder') : t('details.noNotes')}
         value={notes}
         onChange={(event) => setNotes(event.currentTarget.value)}
         onBlur={commitNotes}
@@ -180,20 +187,38 @@ const TodoDetails = ({
       <Group justify="space-between" align="flex-end">
         <Stack gap={2}>
           <Text size="xs" c="dimmed">
-            Created by {todo.createdBy.displayName} · {dayjs(todo.createdAt).format('D MMM YYYY, HH:mm')}
+            {t('details.createdBy', { name: todo.createdBy.displayName, date: formatDate(dayjs(todo.createdAt), 'dateTime') })}
           </Text>
           {todo.completedAt && (
             <Text size="xs" c="dimmed">
-              Completed {dayjs(todo.completedAt).format('D MMM, HH:mm')}
+              {t('details.completedAt', { date: formatDate(dayjs(todo.completedAt), 'dayMonthTime') })}
             </Text>
           )}
         </Stack>
-        {canWrite && (
-          <Button variant="subtle" color="red" leftSection={<IconTrash size={16} />} onClick={() => onDelete(todo)}>
-            Delete
+        {canWrite && !confirmingDelete && (
+          <Button variant="subtle" color="red" leftSection={<IconTrash size={16} />} onClick={requestDelete}>
+            {t('common.delete')}
           </Button>
         )}
       </Group>
+
+      {/* Inline confirmation: a dialog on top of this panel would fight with its overlay. */}
+      <Collapse expanded={confirmingDelete}>
+        <Paper withBorder radius="md" p="sm" bg="var(--mantine-color-red-light)" role="alertdialog" aria-label={t('todos.deleteConfirm.title')}>
+          <Group gap="xs" wrap="nowrap" align="flex-start">
+            <IconAlertTriangle size={18} color="var(--mantine-color-red-filled)" style={{ flexShrink: 0, marginTop: 2 }} />
+            <Text size="sm">{t('details.deletePrompt')}</Text>
+          </Group>
+          <Group justify="flex-end" gap="xs" mt="sm">
+            <Button size="xs" variant="default" onClick={() => setConfirmingDelete(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button size="xs" color="red" leftSection={<IconTrash size={14} />} onClick={() => onDelete(todo)} data-autofocus>
+              {t('common.delete')}
+            </Button>
+          </Group>
+        </Paper>
+      </Collapse>
     </Stack>
   );
 };
@@ -206,8 +231,9 @@ export const TodoDetailsSheet = ({ todo, onClose, ...props }: TodoDetailsSheetPr
   if (todo && todo !== lastTodo) setLastTodo(todo);
   const shown = todo ?? lastTodo;
 
+  const { t } = useTranslation();
   const content = shown && <TodoDetails key={shown.id} todo={shown} {...props} />;
-  const title = props.canWrite ? 'Task details' : 'Task details (view only)';
+  const title = props.canWrite ? t('details.title') : t('details.titleReadonly');
 
   return isMobile ? (
     <BottomSheet opened={!!todo} onClose={onClose} title={title}>

@@ -5,7 +5,8 @@ import { isHighlighted, PRIORITY_META } from '@/domain/priority';
 import type { Priority, Reminder, Todo } from '@/domain/types';
 import { useSettingsStore } from '@/features/settings/settingsStore';
 import { formatReminder } from '@/lib/dates';
-import { CheckCircle, UserAvatar } from '@/shared/ui';
+import { useTranslation } from '@/i18n';
+import { CheckCircle, HighlightedText, UserAvatar } from '@/shared/ui';
 import { DueBadge } from './DueBadge';
 import { PriorityMenu } from './PriorityMenu';
 import classes from './TodoItem.module.css';
@@ -18,12 +19,15 @@ export interface TodoItemProps {
   pending?: boolean;
   /** Personal reminder, shown while it hasn't fired. */
   reminder?: Reminder;
+  /** Title characters matched by the search. */
+  matches?: readonly number[];
   onToggle: (todo: Todo, completed: boolean) => void;
   onOpen: (todo: Todo) => void;
   onPriorityChange: (todo: Todo, priority: Priority) => void;
 }
 
-export const TodoItem = memo(({ todo, canWrite, showAuthor, pending, reminder, onToggle, onOpen, onPriorityChange }: TodoItemProps) => {
+export const TodoItem = memo(({ todo, canWrite, showAuthor, pending, reminder, matches, onToggle, onOpen, onPriorityChange }: TodoItemProps) => {
+  const { t } = useTranslation();
   const timeFormat = useSettingsStore((state) => state.timeFormat);
   const meta = PRIORITY_META[todo.priority];
   const highlight = !todo.completed && isHighlighted(todo.priority);
@@ -47,21 +51,21 @@ export const TodoItem = memo(({ todo, canWrite, showAuthor, pending, reminder, o
         onChange={(checked) => onToggle(todo, checked)}
         disabled={!canWrite}
         color={todo.priority !== 'none' ? meta.color : undefined}
-        label={todo.completed ? `Mark "${todo.title}" as not completed` : `Complete "${todo.title}"`}
+        label={todo.completed ? t('todos.uncomplete', { title: todo.title }) : t('todos.complete', { title: todo.title })}
       />
       <div className={classes.content}>
         <Text size="sm" fw={highlight ? 600 : 500} className={classes.title}>
-          {todo.title}
+          <HighlightedText text={todo.title} indices={matches} />
         </Text>
         <div className={classes.meta}>
           {todo.dueAt && <DueBadge todo={todo} />}
           {reminder && !reminder.firedAt && !todo.completed && (
-            <Group gap={2} wrap="nowrap" aria-label="Reminder">
+            <Group gap={2} wrap="nowrap" aria-label={t('todos.reminder')}>
               <IconBell size={12} />
               <span>{formatReminder(reminder.remindAt, timeFormat)}</span>
             </Group>
           )}
-          {todo.notes && <IconNote size={14} aria-label="Has notes" />}
+          {todo.notes && <IconNote size={14} aria-label={t('todos.hasNotes')} />}
           {showAuthor && (
             <Group gap={4} wrap="nowrap">
               <UserAvatar user={todo.createdBy} size={14} />

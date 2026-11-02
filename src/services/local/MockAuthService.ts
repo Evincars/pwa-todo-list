@@ -8,6 +8,7 @@ import { nowISO } from './session';
 export interface MockAccount {
   displayName: string;
   email: string;
+  /** Provider profile photo (Google: `user.photoURL`; Apple never provides one). */
   photoURL?: string | null;
 }
 
@@ -52,9 +53,9 @@ export class MockAuthService implements AuthService {
   }
 
   async signIn(provider: AuthProviderId): Promise<SignInResult> {
-    if (!this.accountPicker) throw new AppError('failed-precondition', 'Account picker is not available');
+    if (!this.accountPicker) throw new AppError('failed-precondition', 'accountPickerUnavailable');
     const account = await this.accountPicker(provider);
-    if (!account) throw new AppError('cancelled', 'Sign-in was cancelled');
+    if (!account) throw new AppError('cancelled', 'signInCancelled');
 
     const email = account.email.trim().toLowerCase();
     const id = uidFromEmail(email);
@@ -65,7 +66,8 @@ export class MockAuthService implements AuthService {
       email,
       provider,
       displayName: account.displayName.trim() || email.split('@')[0] || email,
-      photoURL: account.photoURL ?? existing?.photoURL ?? null,
+      // Refreshed on every sign-in, like Firebase does with the provider's profile.
+      photoURL: provider === 'apple' ? null : (account.photoURL ?? null),
       createdAt: existing?.createdAt ?? now,
       lastLoginAt: now,
     };

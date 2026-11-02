@@ -70,7 +70,7 @@ export const useDeleteList = () => {
       queryClient.removeQueries({ queryKey: queryKeys.lists.detail(listId) });
       queryClient.removeQueries({ queryKey: queryKeys.todos.byList(listId) });
     },
-    meta: { successMessage: 'List deleted' },
+    meta: { successMessage: 'lists.deleted' },
   });
 };
 
@@ -83,7 +83,7 @@ export const useLeaveList = () => {
       queryClient.setQueryData<TodoList[]>(queryKeys.lists.mine(), (current) => current?.filter((l) => l.id !== listId));
       queryClient.removeQueries({ queryKey: queryKeys.lists.detail(listId) });
     },
-    meta: { successMessage: 'You left the list' },
+    meta: { successMessage: 'lists.left' },
   });
 };
 
@@ -103,6 +103,6 @@ export const useRemoveMember = (listId: ListId) => {
   return useMutation({
     mutationFn: (userId: UserId) => lists.removeMember(listId, userId),
     onSuccess: writeList,
-    meta: { successMessage: 'Member removed' },
+    meta: { successMessage: 'share.memberRemoved' },
   });
 };

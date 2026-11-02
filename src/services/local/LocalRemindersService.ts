@@ -29,9 +29,9 @@ export class LocalRemindersService implements RemindersService {
   async setReminder(listId: ListId, todoId: TodoId, remindAt: ISODateString): Promise<Reminder> {
     const user = requireUser(this.auth);
     const list = await this.store.get<TodoList>(paths.list(listId));
-    if (!list) throw new AppError('not-found', 'This list does not exist or was deleted');
+    if (!list) throw new AppError('not-found', 'listNotFound');
     assertCanRead(list, user.id);
-    if (Number.isNaN(Date.parse(remindAt))) throw new AppError('invalid-argument', 'Invalid reminder time');
+    if (Number.isNaN(Date.parse(remindAt))) throw new AppError('invalid-argument', 'invalidReminderTime');
 
     const id = reminderIdOf(listId, todoId);
     const existing = await this.store.get<Reminder>(paths.reminder(user.id, id));

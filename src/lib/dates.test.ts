@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
 import { describe, expect, it } from 'vitest';
+import { applyLanguage, t } from '@/i18n/i18n';
 import { combineDateTime, formatDue, getQuickDueOptions } from './dates';
 
 describe('getQuickDueOptions', () => {
@@ -32,5 +33,22 @@ describe('combineDateTime / formatDue', () => {
   it('formats date-only values relatively', () => {
     expect(formatDue(combineDateTime('2026-11-04', null), '24h', now)).toBe('Tomorrow');
     expect(formatDue(combineDateTime('2026-11-02', null), '24h', now)).toBe('Yesterday');
+  });
+});
+
+describe('localized formatting', () => {
+  const now = dayjs('2026-11-03T10:00:00');
+
+  it('uses Czech words, numeric dates and capitalized weekdays', () => {
+    applyLanguage('cs');
+    try {
+      expect(formatDue(combineDateTime('2026-11-04', '9:00'), '24h', now)).toBe('Zítra, 09:00');
+      expect(formatDue(combineDateTime('2026-11-06', null), '24h', now)).toBe('Pátek');
+      expect(formatDue(combineDateTime('2026-11-20', null), '24h', now)).toBe('Pá 20. 11.');
+      expect(t('calendar.tasks', { count: 3 })).toBe('3 úkoly');
+      expect(t('calendar.tasks', { count: 5 })).toBe('5 úkolů');
+    } finally {
+      applyLanguage('en');
+    }
   });
 });

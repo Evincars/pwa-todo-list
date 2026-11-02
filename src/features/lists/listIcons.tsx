@@ -57,6 +57,9 @@ import {
 } from '@tabler/icons-react';
 import type { ListColor, ListIcon } from '@/domain/types';
 
+/** Group keys map to `icons.groups.<key>` translations, glyph ids to `icons.glyphs.<id>`. */
+export type IconGroupKey = 'everyday' | 'dark' | 'metal' | 'hazard';
+
 /** Tabler has no electric guitar – drawn in the same 24px / 2px-stroke style. */
 const IconElectricGuitar = createReactComponent('outline', 'electric-guitar', 'ElectricGuitar', [
   ['path', { d: 'M17.5 4.5l2 -2l2 2l-2 2z', key: 'head' }],
@@ -73,103 +76,103 @@ const IconElectricGuitar = createReactComponent('outline', 'electric-guitar', 'E
 
 const GLYPH_PREFIX = 'glyph:';
 
-const glyph = <const Id extends string>(id: Id, label: string, icon: TablerIcon) => ({ id, label, icon });
+const glyph = <const Id extends string>(id: Id, icon: TablerIcon) => ({ id, icon });
 
 const GLYPH_GROUPS = [
   {
-    label: 'Dark',
+    key: 'dark',
     items: [
-      glyph('skull', 'Skull', IconSkull),
-      glyph('pentagram', 'Pentagram', IconPentagram),
-      glyph('coffin', 'Coffin', IconCoffin),
-      glyph('grave', 'Grave', IconGrave2),
-      glyph('bat', 'Bat', IconBat),
-      glyph('spider', 'Spider', IconSpiderFilled),
-      glyph('ghost', 'Ghost', IconGhostFilled),
-      glyph('pumpkin', 'Scary pumpkin', IconPumpkinScary),
-      glyph('crystal-ball', 'Crystal ball', IconCrystalBall),
-      glyph('moon', 'Moon', IconMoonFilled),
-      glyph('eye', 'Eye', IconEyeFilled),
-      glyph('candle', 'Candle', IconCandleFilled),
-      glyph('sword', 'Sword', IconSword),
-      glyph('axe', 'Axe', IconAxe),
+      glyph('skull', IconSkull),
+      glyph('pentagram', IconPentagram),
+      glyph('coffin', IconCoffin),
+      glyph('grave', IconGrave2),
+      glyph('bat', IconBat),
+      glyph('spider', IconSpiderFilled),
+      glyph('ghost', IconGhostFilled),
+      glyph('pumpkin', IconPumpkinScary),
+      glyph('crystal-ball', IconCrystalBall),
+      glyph('moon', IconMoonFilled),
+      glyph('eye', IconEyeFilled),
+      glyph('candle', IconCandleFilled),
+      glyph('sword', IconSword),
+      glyph('axe', IconAxe),
     ],
   },
   {
-    label: 'Metal & music',
+    key: 'metal',
     items: [
-      glyph('horns', 'Horns up', IconHandLoveYou),
-      glyph('electric-guitar', 'Electric guitar', IconElectricGuitar),
-      glyph('guitar-pick', 'Guitar pick', IconGuitarPickFilled),
-      glyph('vinyl', 'Vinyl', IconVinyl),
-      glyph('flame', 'Flame', IconFlameFilled),
-      glyph('bolt', 'Lightning', IconBoltFilled),
-      glyph('microphone', 'Microphone', IconMicrophone2),
-      glyph('headphones', 'Headphones', IconHeadphonesFilled),
-      glyph('crown', 'Crown', IconCrownFilled),
-      glyph('swords', 'Crossed swords', IconSwords),
-      glyph('piano', 'Piano', IconPiano),
-      glyph('music', 'Music', IconMusic),
+      glyph('horns', IconHandLoveYou),
+      glyph('electric-guitar', IconElectricGuitar),
+      glyph('guitar-pick', IconGuitarPickFilled),
+      glyph('vinyl', IconVinyl),
+      glyph('flame', IconFlameFilled),
+      glyph('bolt', IconBoltFilled),
+      glyph('microphone', IconMicrophone2),
+      glyph('headphones', IconHeadphonesFilled),
+      glyph('crown', IconCrownFilled),
+      glyph('swords', IconSwords),
+      glyph('piano', IconPiano),
+      glyph('music', IconMusic),
     ],
   },
   {
-    label: 'Hazard & science',
+    key: 'hazard',
     items: [
-      glyph('radioactive', 'Radioactive', IconRadioactiveFilled),
-      glyph('biohazard', 'Biohazard', IconBiohazardFilled),
-      glyph('bomb', 'Bomb', IconBombFilled),
-      glyph('virus', 'Virus', IconVirus),
-      glyph('flask', 'Flask', IconFlaskFilled),
-      glyph('atom', 'Atom', IconAtom),
-      glyph('dna', 'DNA', IconDna2),
-      glyph('ufo', 'UFO', IconUfo),
-      glyph('alien', 'Alien', IconAlien),
-      glyph('rocket', 'Rocket', IconRocket),
+      glyph('radioactive', IconRadioactiveFilled),
+      glyph('biohazard', IconBiohazardFilled),
+      glyph('bomb', IconBombFilled),
+      glyph('virus', IconVirus),
+      glyph('flask', IconFlaskFilled),
+      glyph('atom', IconAtom),
+      glyph('dna', IconDna2),
+      glyph('ufo', IconUfo),
+      glyph('alien', IconAlien),
+      glyph('rocket', IconRocket),
     ],
   },
   {
-    label: 'Everyday',
+    key: 'everyday',
     items: [
-      glyph('home', 'Home', IconHome),
-      glyph('briefcase', 'Work', IconBriefcase),
-      glyph('cart', 'Shopping', IconShoppingCart),
-      glyph('book', 'Book', IconBook),
-      glyph('code', 'Code', IconCode),
-      glyph('barbell', 'Workout', IconBarbell),
-      glyph('plane', 'Travel', IconPlane),
-      glyph('heart', 'Heart', IconHeartFilled),
-      glyph('gift', 'Gift', IconGift),
-      glyph('bulb', 'Idea', IconBulb),
-      glyph('coffee', 'Coffee', IconCoffee),
-      glyph('paw', 'Pets', IconPaw),
-      glyph('leaf', 'Garden', IconLeaf),
-      glyph('trophy', 'Goal', IconTrophy),
-      glyph('star', 'Star', IconStarFilled),
-      glyph('kitchen', 'Cooking', IconToolsKitchen2),
-      glyph('tools', 'Repairs', IconTools),
-      glyph('cash', 'Money', IconCash),
+      glyph('home', IconHome),
+      glyph('briefcase', IconBriefcase),
+      glyph('cart', IconShoppingCart),
+      glyph('book', IconBook),
+      glyph('code', IconCode),
+      glyph('barbell', IconBarbell),
+      glyph('plane', IconPlane),
+      glyph('heart', IconHeartFilled),
+      glyph('gift', IconGift),
+      glyph('bulb', IconBulb),
+      glyph('coffee', IconCoffee),
+      glyph('paw', IconPaw),
+      glyph('leaf', IconLeaf),
+      glyph('trophy', IconTrophy),
+      glyph('star', IconStarFilled),
+      glyph('kitchen', IconToolsKitchen2),
+      glyph('tools', IconTools),
+      glyph('cash', IconCash),
     ],
   },
-] as const;
+] as const satisfies readonly { key: IconGroupKey; items: readonly { id: string; icon: TablerIcon }[] }[];
 
 export type ListGlyphId = (typeof GLYPH_GROUPS)[number]['items'][number]['id'];
 
-const GLYPHS = new Map<string, { label: string; icon: TablerIcon }>(
+const GLYPHS = new Map<string, { id: ListGlyphId; icon: TablerIcon }>(
   GLYPH_GROUPS.flatMap((group) => group.items.map((item) => [item.id, item] as const)),
 );
 
 export const EMOJI_GROUPS = [
-  { label: 'Everyday', items: ['📝', '✅', '🛒', '🏠', '💼', '🎯', '📚', '💪', '✈️', '🎉', '🍳', '💡', '🧹', '🎁', '🌱', '❤️'] },
-  { label: 'Dark', items: ['🖤', '💀', '☠️', '🦇', '🕷️', '🕸️', '🌑', '⚰️', '🪦', '🔮', '🗡️', '👁️', '🐍', '🩸', '😈', '👹', '🧛', '🐺', '🌋', '🥀'] },
-  { label: 'Metal & music', items: ['🤘', '🎸', '🥁', '🎤', '🎧', '🔊', '⛓️', '🔥', '⚡', '🐐', '🪓', '💿', '🎶', '🎹', '🔱', '🏴'] },
-  { label: 'Hazard & science', items: ['☢️', '☣️', '⚠️', '🧪', '⚛️', '🧬', '💣', '🚀', '🛸', '👽', '🤖', '💻', '🔬', '🧲', '🌡️', '🛢️'] },
+  { key: 'everyday', items: ['📝', '✅', '🛒', '🏠', '💼', '🎯', '📚', '💪', '✈️', '🎉', '🍳', '💡', '🧹', '🎁', '🌱', '❤️'] },
+  { key: 'dark', items: ['🖤', '💀', '☠️', '🦇', '🕷️', '🕸️', '🌑', '⚰️', '🪦', '🔮', '🗡️', '👁️', '🐍', '🩸', '😈', '👹', '🧛', '🐺', '🌋', '🥀'] },
+  { key: 'metal', items: ['🤘', '🎸', '🥁', '🎤', '🎧', '🔊', '⛓️', '🔥', '⚡', '🐐', '🪓', '💿', '🎶', '🎹', '🔱', '🏴'] },
+  { key: 'hazard', items: ['☢️', '☣️', '⚠️', '🧪', '⚛️', '🧬', '💣', '🚀', '🛸', '👽', '🤖', '💻', '🔬', '🧲', '🌡️', '🛢️'] },
 ] as const;
 
 export const DEFAULT_LIST_ICON: ListIcon = '📝';
 
 export const glyphIcon = (id: ListGlyphId): ListIcon => `${GLYPH_PREFIX}${id}`;
 
-export type ResolvedListIcon = { kind: 'emoji'; emoji: string } | { kind: 'glyph'; label: string; icon: TablerIcon };
+export type ResolvedListIcon = { kind: 'emoji'; emoji: string } | { kind: 'glyph'; id: ListGlyphId; icon: TablerIcon };
 
 /** Unknown glyphs (e.g. written by a newer app version) fall back to the default emoji. */
 export const resolveListIcon = (icon: ListIcon): ResolvedListIcon => {

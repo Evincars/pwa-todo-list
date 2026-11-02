@@ -2,7 +2,8 @@ import { MantineProvider } from '@mantine/core';
 import { DatesProvider } from '@mantine/dates';
 import { useColorScheme } from '@mantine/hooks';
 import { Notifications } from '@mantine/notifications';
-import { useEffect, useMemo, type PropsWithChildren } from 'react';
+import { Fragment, useEffect, useMemo, type PropsWithChildren } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '@/features/settings/settingsStore';
 import { createAppTheme, createCssVariablesResolver } from '@/theme/createAppTheme';
 import { THEME_PRESETS } from '@/theme/presets';
@@ -15,6 +16,7 @@ export const AppThemeProvider = ({ children }: PropsWithChildren) => {
   const fontScale = useSettingsStore((state) => state.fontScale);
   const weekStartsOn = useSettingsStore((state) => state.weekStartsOn);
   const systemScheme = useColorScheme('light', { getInitialValueInEffect: false });
+  const { i18n } = useTranslation();
 
   const colorScheme = preference === 'system' ? systemScheme : preference;
   const theme = useMemo(() => createAppTheme({ themeId, radius }), [themeId, radius]);
@@ -32,9 +34,10 @@ export const AppThemeProvider = ({ children }: PropsWithChildren) => {
 
   return (
     <MantineProvider theme={theme} forceColorScheme={colorScheme} cssVariablesResolver={cssVariablesResolver}>
-      <DatesProvider settings={{ firstDayOfWeek: weekStartsOn, consistentWeeks: true }}>
+      <DatesProvider settings={{ firstDayOfWeek: weekStartsOn, consistentWeeks: true, locale: i18n.language }}>
         <Notifications position="top-center" limit={3} zIndex={1000} />
-        {children}
+        {/* Remount on language change: also refreshes texts computed outside of React (dates, labels). */}
+        <Fragment key={i18n.language}>{children}</Fragment>
       </DatesProvider>
     </MantineProvider>
   );

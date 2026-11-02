@@ -24,7 +24,7 @@ export class LocalTodosService implements TodosService {
     const { list, user } = await this.context(listId);
     assertCanWrite(list, user.id);
     const title = input.title.trim();
-    if (!title) throw new AppError('invalid-argument', 'Task title is required');
+    if (!title) throw new AppError('invalid-argument', 'taskTitleRequired');
     const now = nowISO();
     const todo: Todo = {
       id,
@@ -50,9 +50,9 @@ export class LocalTodosService implements TodosService {
     const { list, user } = await this.context(listId);
     assertCanWrite(list, user.id);
     const todo = await this.store.get<Todo>(paths.todo(listId, todoId));
-    if (!todo) throw new AppError('not-found', 'Task not found');
+    if (!todo) throw new AppError('not-found', 'taskNotFound');
     if (input.title !== undefined && !input.title.trim()) {
-      throw new AppError('invalid-argument', 'Task title is required');
+      throw new AppError('invalid-argument', 'taskTitleRequired');
     }
     const now = nowISO();
     const completionChanged = input.completed !== undefined && input.completed !== todo.completed;
@@ -91,7 +91,7 @@ export class LocalTodosService implements TodosService {
   private async context(listId: ListId) {
     const user = requireUser(this.auth);
     const list = await this.store.get<TodoList>(paths.list(listId));
-    if (!list) throw new AppError('not-found', 'This list does not exist or was deleted');
+    if (!list) throw new AppError('not-found', 'listNotFound');
     return { list, user };
   }
 }

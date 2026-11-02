@@ -3,11 +3,11 @@ import { IconMail } from '@tabler/icons-react';
 import { useNavigate } from '@tanstack/react-router';
 import type { Invitation } from '@/domain/types';
 import { ListIconView } from '@/features/lists/components/ListIconView';
+import { useTranslation } from '@/i18n';
 import { useAcceptInvitation, useDeclineInvitation, useMyInvitationsQuery } from '../api';
 
-const PERMISSION_TEXT = { read: 'view', write: 'edit' } as const;
-
 const InvitationCard = ({ invitation }: { invitation: Invitation }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const accept = useAcceptInvitation();
   const decline = useDeclineInvitation();
@@ -23,7 +23,7 @@ const InvitationCard = ({ invitation }: { invitation: Invitation }) => {
             {invitation.listTitle}
           </Text>
           <Text size="sm" c="dimmed">
-            {invitation.invitedBy.displayName} invited you to {PERMISSION_TEXT[invitation.permission]}
+            {t(`invitations.invitedYou.${invitation.permission}`, { name: invitation.invitedBy.displayName })}
           </Text>
           <Group mt="sm" gap="xs">
             <Button
@@ -35,10 +35,10 @@ const InvitationCard = ({ invitation }: { invitation: Invitation }) => {
                 })
               }
             >
-              Join list
+              {t('invitations.join')}
             </Button>
             <Button size="xs" variant="default" loading={decline.isPending} onClick={() => decline.mutate(invitation.id)}>
-              Decline
+              {t('invitations.decline')}
             </Button>
           </Group>
         </div>
@@ -48,6 +48,7 @@ const InvitationCard = ({ invitation }: { invitation: Invitation }) => {
 };
 
 export const InvitationsInbox = () => {
+  const { t } = useTranslation();
   const { data: invitations = [] } = useMyInvitationsQuery();
   if (!invitations.length) return null;
 
@@ -56,7 +57,7 @@ export const InvitationsInbox = () => {
       <Group gap={6} px={4}>
         <IconMail size={16} color="var(--mantine-primary-color-filled)" />
         <Title order={2} fz="sm" tt="uppercase" c="dimmed">
-          Invitations
+          {t('invitations.inbox')}
         </Title>
       </Group>
       {invitations.map((invitation) => (

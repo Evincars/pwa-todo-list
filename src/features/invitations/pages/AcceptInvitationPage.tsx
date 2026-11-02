@@ -2,9 +2,10 @@ import { Button, Card, Center, EmptyState, Loader, Stack, Text, Title } from '@m
 import { IconMailOff } from '@tabler/icons-react';
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { getErrorMessage } from '@/domain/errors';
+import { AppError } from '@/domain/errors';
 import type { ListId } from '@/domain/types';
 import { useCurrentUser } from '@/features/auth/authStore';
+import { getErrorMessage, Trans, useTranslation } from '@/i18n';
 import { useServices } from '@/services/ServicesContext';
 import { ListIconView } from '@/features/lists/components/ListIconView';
 import { UserAvatar } from '@/shared/ui';
@@ -14,6 +15,7 @@ const route = getRouteApi('/_authed/invite/$invitationId');
 
 export const AcceptInvitationPage = () => {
   const { invitationId } = route.useParams();
+  const { t } = useTranslation();
   const services = useServices();
   const user = useCurrentUser();
   const navigate = useNavigate();
@@ -33,15 +35,15 @@ export const AcceptInvitationPage = () => {
   const data = invitation.data;
   const unusable =
     invitation.error ??
-    (data && data.status !== 'pending' && !data.acceptedBy.includes(user.id) ? new Error(`This invitation was ${data.status}`) : null);
+    (data && data.status !== 'pending' && !data.acceptedBy.includes(user.id) ? new AppError('failed-precondition', 'invitationStatus', { status: data.status }) : null);
 
   if (unusable || !data) {
     return (
       <Center flex={1} p="md">
-        <EmptyState icon={<IconMailOff />} variant="light" color="gray" title="Invitation unavailable" description={getErrorMessage(unusable)}>
+        <EmptyState icon={<IconMailOff />} variant="light" color="gray" title={t('invitations.unavailable')} description={getErrorMessage(unusable)}>
           <EmptyState.Actions>
             <Button component={Link} to="/">
-              Go to my lists
+              {t('invitations.goToLists')}
             </Button>
           </EmptyState.Actions>
         </EmptyState>
@@ -60,27 +62,31 @@ export const AcceptInvitationPage = () => {
           </Text>
           <div>
             <Text size="sm" c="dimmed">
-              You've been invited to
+              {t('invitations.invitedTo')}
             </Text>
             <Title order={2}>{data.listTitle}</Title>
           </div>
           <Stack gap={4} align="center">
             <UserAvatar user={data.invitedBy} size="lg" />
             <Text size="sm">
-              <b>{data.invitedBy.displayName}</b> wants you to {data.permission === 'write' ? 'collaborate on' : 'view'} this list
+              <Trans
+                i18nKey={`invitations.wantsYou.${data.permission}`}
+                values={{ name: data.invitedBy.displayName }}
+                components={{ b: <b /> }}
+              />
             </Text>
           </Stack>
           {alreadyJoined ? (
             <Button fullWidth size="md" onClick={() => openList(data.listId)}>
-              Open list
+              {t('invitations.openList')}
             </Button>
           ) : (
             <Button fullWidth size="md" loading={accept.isPending} onClick={() => accept.mutate(data.id, { onSuccess: (list) => openList(list.id) })}>
-              Join as {user.displayName}
+              {t('invitations.joinAs', { name: user.displayName })}
             </Button>
           )}
           <Button variant="subtle" component={Link} to="/">
-            Not now
+            {t('invitations.notNow')}
           </Button>
         </Stack>
       </Card>

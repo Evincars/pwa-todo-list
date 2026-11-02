@@ -1,14 +1,19 @@
 import type { AuthProviderId } from '@/domain/types';
 import type { MockAccount } from '@/services/local/MockAuthService';
 
-/** Pre-baked identities so sharing can be tried out by switching accounts in one browser. */
+const avatar = (name: string) => `${import.meta.env.BASE_URL}avatars/${name}.svg`;
+
+/**
+ * Pre-baked identities so sharing can be tried out by switching accounts in one browser.
+ * Like the real providers: Google returns a profile photo, Apple never shares one (→ initials).
+ */
 export const DEMO_ACCOUNTS: Record<AuthProviderId, MockAccount[]> = {
   google: [
-    { displayName: 'Alex Morgan', email: 'alex.morgan@gmail.com' },
-    { displayName: 'Sam Rivera', email: 'sam.rivera@gmail.com' },
+    { displayName: 'Alex Morgan', email: 'alex.morgan@gmail.com', photoURL: avatar('alex') },
+    { displayName: 'Sam Rivera', email: 'sam.rivera@gmail.com', photoURL: avatar('sam') },
   ],
   apple: [
-    { displayName: 'Jordan Lee', email: 'jordan.lee@icloud.com' },
-    { displayName: 'Taylor Kim', email: 'taylor.kim@icloud.com' },
+    { displayName: 'Jordan Lee', email: 'jordan.lee@icloud.com', photoURL: null },
+    { displayName: 'Taylor Kim', email: 'taylor.kim@icloud.com', photoURL: null },
   ],
 };

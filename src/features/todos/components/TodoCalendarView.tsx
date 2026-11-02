@@ -6,6 +6,8 @@ import { PRIORITY_META } from '@/domain/priority';
 import { groupTodosByDay, topPriority } from '@/domain/todoQuery';
 import type { Todo } from '@/domain/types';
 import { useSettingsStore } from '@/features/settings/settingsStore';
+import { useTranslation } from '@/i18n';
+import { capitalize, formatDate, relativeDay } from '@/lib/dates';
 import { AgendaCalendar, type CalendarDayMeta, type CalendarSpan } from '@/shared/ui';
 
 export interface TodoCalendarViewProps {
@@ -21,8 +23,6 @@ export interface TodoCalendarViewProps {
   onShowUnscheduled: () => void;
 }
 
-const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
-
 /** Calendar with per-day task counts and the agenda of the selected day below it. */
 export const TodoCalendarView = ({
   todos,
@@ -35,6 +35,7 @@ export const TodoCalendarView = ({
   renderItem,
   onShowUnscheduled,
 }: TodoCalendarViewProps) => {
+  const { t } = useTranslation();
   const weekStartsOn = useSettingsStore((state) => state.weekStartsOn);
   const days = useMemo(() => groupTodosByDay(todos), [todos]);
   const today = dayjs().format('YYYY-MM-DD');
@@ -47,7 +48,7 @@ export const TodoCalendarView = ({
     return {
       count: entry.active.length,
       color: overdue ? 'red' : priority === 'none' ? undefined : PRIORITY_META[priority].color,
-      label: `${plural(entry.active.length, 'task')}${overdue ? ' overdue' : ''}`,
+      label: t(overdue ? 'calendar.overdueTasks' : 'calendar.tasks', { count: entry.active.length }),
     };
   };
 
@@ -56,7 +57,8 @@ export const TodoCalendarView = ({
   const completed = showCompleted ? (selected?.completed ?? []) : [];
   const unscheduled = todos.filter((todo) => !todo.dueAt && !todo.completed).length;
   const date = dayjs(day);
-  const relative = day === today ? 'Today' : date.isSame(dayjs().add(1, 'day'), 'day') ? 'Tomorrow' : null;
+  const relative = date.isBefore(dayjs(), 'day') ? null : relativeDay(date);
+  const dateLabel = capitalize(formatDate(date, 'agendaDay'));
 
   return (
     <Stack gap="sm">
@@ -71,12 +73,11 @@ export const TodoCalendarView = ({
 
       <Group justify="space-between" px={4} mt={4}>
         <Text fw={600} size="sm">
-          {relative ? `${relative} · ` : ''}
-          {date.format('dddd, D MMMM')}
+          {relative ? t('calendar.relative', { relative, date: dateLabel }) : dateLabel}
         </Text>
         {active.length > 0 && (
           <Text size="xs" c="dimmed">
-            {plural(active.length, 'task')}
+            {t('calendar.tasks', { count: active.length })}
           </Text>
         )}
       </Group>
@@ -86,8 +87,8 @@ export const TodoCalendarView = ({
           icon={<IconCalendarCheck />}
           variant="light"
           color="gray"
-          title="Nothing planned"
-          description={canWrite && day >= today ? 'Tasks you add below are planned for this day.' : undefined}
+          title={t('calendar.nothingPlanned')}
+          description={canWrite && day >= today ? t('calendar.plannedHint') : undefined}
           py="md"
         />
       ) : (
@@ -99,9 +100,9 @@ export const TodoCalendarView = ({
 
       {unscheduled > 0 && (
         <Text size="xs" c="dimmed" ta="center" mt="xs">
-          {plural(unscheduled, 'task')} without a date ·{' '}
+          {t('calendar.withoutDate', { count: unscheduled })} ·{' '}
           <Anchor component="button" size="xs" onClick={onShowUnscheduled}>
-            show in list
+            {t('calendar.showInList')}
           </Anchor>
         </Text>
       )}

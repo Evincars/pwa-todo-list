@@ -18,7 +18,6 @@ import dayjs from 'dayjs';
 import { useCallback, useMemo, useState } from 'react';
 import { canManage, canWrite as canWriteAccess, getListAccess } from '@/domain/permissions';
 import { queryTodos, TODO_FILTERS, type TodoFilter } from '@/domain/todoQuery';
-import { getErrorMessage } from '@/domain/errors';
 import { reminderIdOf, type CreateTodoInput, type ISODateString, type Priority, type Todo, type TodoId, type TodoList, type UpdateTodoInput } from '@/domain/types';
 import { useCurrentUser } from '@/features/auth/authStore';
 import { useDeleteList, useLeaveList, useListQuery, useUpdateList } from '@/features/lists/api';
@@ -27,6 +26,8 @@ import { ListIconView } from '@/features/lists/components/ListIconView';
 import { ShareSheet } from '@/features/lists/components/ShareSheet';
 import { useListReminders, useRemoveReminder, useSetReminder } from '@/features/reminders/api';
 import { useListViewPrefs, useSettingsStore } from '@/features/settings/settingsStore';
+import { getErrorMessage, useTranslation } from '@/i18n';
+import { formatDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { AvatarStack, confirm, PageHeader } from '@/shared/ui';
 import { useClearCompleted, useCreateTodo, useDeleteTodo, useTodosQuery, useUpdateTodo } from '../api';
@@ -39,27 +40,29 @@ import { TodoToolbar } from '../components/TodoToolbar';
 
 const route = getRouteApi('/_authed/lists/$listId');
 const NO_TODOS: Todo[] = [];
+const HEADER_ICON_SIZE = 22;
 
 /** Guards against the list disappearing (deleted, or access revoked) while it's open. */
 export const ListPage = () => {
   const { listId } = route.useParams();
   const listQuery = useListQuery(listId);
+  const { t } = useTranslation();
 
   if (listQuery.error || !listQuery.data) {
     return (
       <>
-        <PageHeader title="List unavailable" onBack={() => window.history.back()} />
+        <PageHeader title={t('list.unavailableTitle')} onBack={() => window.history.back()} />
         <EmptyState
           icon={<IconLock />}
           variant="light"
           color="gray"
-          title="You no longer have access"
+          title={t('list.noAccess')}
           description={listQuery.error ? getErrorMessage(listQuery.error) : undefined}
           py={60}
         >
           <EmptyState.Actions>
             <Button component={Link} to="/">
-              Back to my lists
+              {t('common.backToLists')}
             </Button>
           </EmptyState.Actions>
         </EmptyState>
@@ -74,12 +77,12 @@ const ListPageContent = ({ list }: { list: TodoList }) => {
   const { task: openTaskId } = route.useSearch();
   const navigate = useNavigate();
   const user = useCurrentUser();
+  const { t } = useTranslation();
   const todos = useTodosQuery(listId).data ?? NO_TODOS;
-  useDocumentTitle(`${list.title} · Shared Todo`);
+  useDocumentTitle(t('app.pageTitle', { page: list.title }));
 
   const prefs = useListViewPrefs(listId);
   const setListPrefs = useSettingsStore((state) => state.setListPrefs);
-  const confirmDelete = useSettingsStore((state) => state.confirmDelete);
   const [search, setSearch] = useState('');
   const [calendarDay, setCalendarDay] = useState(() => dayjs().format('YYYY-MM-DD'));
   const [shareOpened, shareHandlers] = useDisclosure(false);
@@ -147,10 +150,8 @@ const ListPageContent = ({ list }: { list: TodoList }) => {
     else removeReminder.mutate(reminderIdOf(listId, todo.id));
   };
 
-  const handleDelete = async (todo: Todo) => {
-    if (confirmDelete && !(await confirm({ title: 'Delete task?', message: `“${todo.title}” will be permanently deleted.`, confirmLabel: 'Delete', danger: true }))) {
-      return;
-    }
+  /** Confirmation happens inline in the details panel. */
+  const handleDelete = (todo: Todo) => {
     closeTask();
     deleteTodo.mutate(todo.id);
     if (reminders.has(todo.id)) removeReminder.mutate(reminderIdOf(listId, todo.id));
@@ -158,19 +159,25 @@ const ListPageContent = ({ list }: { list: TodoList }) => {
 
   const handleDeleteList = async () => {
     const ok = await confirm({
-      title: `Delete “${list.title}”?`,
-      message: isShared ? 'All members will lose access. This cannot be undone.' : 'All tasks will be deleted. This cannot be undone.',
-      confirmLabel: 'Delete list',
+      title: t('list.deleteConfirm.title', { title: list.title }),
+      message: isShared ? t('list.deleteConfirm.shared') : t('list.deleteConfirm.private'),
+      confirmLabel: t('list.deleteConfirm.confirm'),
       danger: true,
     });
     if (ok) deleteList.mutate(list.id, { onSuccess: () => void navigate({ to: '/', replace: true }) });
   };
 
   const handleLeave = async () => {
-    const ok = await confirm({ title: 'Leave this list?', confirmLabel: 'Leave', danger: true });
+    const ok = await confirm({
+      title: t('list.leaveConfirm.title'),
+      message: t('list.leaveConfirm.message', { owner: list.owner.displayName }),
+      confirmLabel: t('common.leave'),
+      danger: true,
+    });
     if (ok) leaveList.mutate(list.id, { onSuccess: () => void navigate({ to: '/', replace: true }) });
   };
 
+  const isCalendar = prefs.view === 'calendar';
   const renderItem = (todo: Todo) => (
     <TodoItem
       key={todo.id}
@@ -178,6 +185,7 @@ const ListPageContent = ({ list }: { list: TodoList }) => {
       canWrite={writable}
       showAuthor={isShared}
       reminder={reminders.get(todo.id)}
+      matches={isCalendar ? undefined : sections.highlights.get(todo.id)}
       onToggle={handleToggle}
       onOpen={openTask}
       onPriorityChange={handlePriority}
@@ -185,7 +193,6 @@ const ListPageContent = ({ list }: { list: TodoList }) => {
   );
 
   const openTodo = openTaskId ? todos.find((todo) => todo.id === (openTaskId as TodoId)) : undefined;
-  const isCalendar = prefs.view === 'calendar';
   const calendarDue =
     isCalendar && calendarDay >= dayjs().format('YYYY-MM-DD')
       ? { dueAt: dayjs(calendarDay).startOf('day').toISOString(), dueHasTime: false }
@@ -201,61 +208,68 @@ const ListPageContent = ({ list }: { list: TodoList }) => {
             <ListIconView icon={list.icon} color={list.color} size={18} style={{ verticalAlign: '-2px' }} /> {list.title}
           </>
         }
-        subtitle={isShared ? `${memberCount} people · ${isOwner ? 'Owner' : `Shared by ${list.owner.displayName}`}` : 'Private'}
+        subtitle={
+          isShared
+            ? `${t('list.people', { count: memberCount })} · ${isOwner ? t('list.owner') : t('list.sharedBy', { name: list.owner.displayName })}`
+            : t('list.private')
+        }
         actions={
-          <Group gap={4} wrap="nowrap">
-            <Tooltip label={isCalendar ? 'List view' : 'Calendar view'}>
+          // Same-sized buttons and icons so the three actions line up on one axis.
+          <Group gap={4} wrap="nowrap" align="center">
+            <Tooltip label={isCalendar ? t('list.listView') : t('list.calendarView')}>
               <ActionIcon
                 size="lg"
                 color="gray"
                 variant="subtle"
                 onClick={() => setListPrefs(listId, { view: isCalendar ? 'list' : 'calendar' })}
-                aria-label={isCalendar ? 'Show as list' : 'Show calendar'}
+                aria-label={isCalendar ? t('list.showAsList') : t('list.showCalendar')}
               >
-                {isCalendar ? <IconListDetails /> : <IconCalendarMonth />}
+                {isCalendar ? <IconListDetails size={HEADER_ICON_SIZE} /> : <IconCalendarMonth size={HEADER_ICON_SIZE} />}
               </ActionIcon>
             </Tooltip>
-            <UnstyledButton onClick={shareHandlers.open} aria-label="Members and sharing" p={4}>
-              {isShared ? (
+            {isShared ? (
+              <UnstyledButton onClick={shareHandlers.open} aria-label={t('list.membersAndSharing')} display="flex" px={4}>
                 <AvatarStack users={[list.owner, ...Object.values(list.members)]} max={3} size="sm" />
-              ) : (
-                <IconUserPlus size={22} />
-              )}
-            </UnstyledButton>
+              </UnstyledButton>
+            ) : (
+              <ActionIcon size="lg" color="gray" variant="subtle" onClick={shareHandlers.open} aria-label={t('list.membersAndSharing')}>
+                <IconUserPlus size={HEADER_ICON_SIZE} />
+              </ActionIcon>
+            )}
             <Menu position="bottom-end" width={220} shadow="md">
               <Menu.Target>
-                <ActionIcon size="lg" color="gray" aria-label="List options">
-                  <IconDots />
+                <ActionIcon size="lg" color="gray" variant="subtle" aria-label={t('list.options')}>
+                  <IconDots size={HEADER_ICON_SIZE} />
                 </ActionIcon>
               </Menu.Target>
               <Menu.Dropdown>
                 {isOwner && (
                   <Menu.Item leftSection={<IconPencil size={16} />} onClick={editHandlers.open}>
-                    Edit list
+                    {t('list.menu.edit')}
                   </Menu.Item>
                 )}
                 <Menu.Item leftSection={<IconUserPlus size={16} />} onClick={shareHandlers.open}>
-                  {isOwner ? 'Share & permissions' : 'Members'}
+                  {isOwner ? t('list.menu.share') : t('list.menu.members')}
                 </Menu.Item>
                 <Menu.Item
                   leftSection={prefs.showCompleted ? <IconEyeOff size={16} /> : <IconEye size={16} />}
                   onClick={() => setListPrefs(listId, { showCompleted: !prefs.showCompleted })}
                 >
-                  {prefs.showCompleted ? 'Hide completed' : 'Show completed'}
+                  {prefs.showCompleted ? t('list.menu.hideCompleted') : t('list.menu.showCompleted')}
                 </Menu.Item>
                 {writable && (
-                  <Menu.Item leftSection={<IconTrashX size={16} />} disabled={!todos.some((t) => t.completed)} onClick={() => clearCompleted.mutate()}>
-                    Clear completed
+                  <Menu.Item leftSection={<IconTrashX size={16} />} disabled={!todos.some((todo) => todo.completed)} onClick={() => clearCompleted.mutate()}>
+                    {t('list.menu.clearCompleted')}
                   </Menu.Item>
                 )}
                 <Menu.Divider />
                 {isOwner ? (
                   <Menu.Item color="red" leftSection={<IconTrash size={16} />} onClick={() => void handleDeleteList()}>
-                    Delete list
+                    {t('list.menu.delete')}
                   </Menu.Item>
                 ) : (
                   <Menu.Item color="red" leftSection={<IconLogout size={16} />} onClick={() => void handleLeave()}>
-                    Leave list
+                    {t('list.menu.leave')}
                   </Menu.Item>
                 )}
               </Menu.Dropdown>
@@ -268,7 +282,7 @@ const ListPageContent = ({ list }: { list: TodoList }) => {
         <Stack gap="sm">
           {!writable && (
             <Alert variant="light" color="gray" icon={<IconEye size={18} />} radius="md" py="xs">
-              View only – ask {list.owner.displayName} for edit access.
+              {t('list.viewOnly', { name: list.owner.displayName })}
             </Alert>
           )}
 
@@ -311,7 +325,7 @@ const ListPageContent = ({ list }: { list: TodoList }) => {
         <QuickAddBar
           onAdd={handleAdd}
           defaultDue={calendarDue}
-          placeholder={calendarDue ? `Add a task for ${dayjs(calendarDay).format('ddd, D MMM')}` : undefined}
+          placeholder={calendarDue ? t('todos.addForDay', { date: formatDate(dayjs(calendarDay), 'composerDay') }) : undefined}
         />
       )}
 
@@ -320,7 +334,7 @@ const ListPageContent = ({ list }: { list: TodoList }) => {
         canWrite={writable}
         onClose={closeTask}
         onUpdate={handleUpdate}
-        onDelete={(todo) => void handleDelete(todo)}
+        onDelete={handleDelete}
         reminder={openTodo ? reminders.get(openTodo.id) : undefined}
         onReminderChange={handleReminderChange}
       />

@@ -11,6 +11,7 @@ A mobile-first, installable todo app with shared lists. The list host invites pe
 | Routing        | TanStack Router (file-based, typed search params with zod, hash history) |
 | Server state   | TanStack Query (optimistic mutations, live invalidation)                 |
 | Client state   | Zustand (auth mirror, persisted settings, dialog bridges)                |
+| i18n           | i18next + react-i18next (typed keys), dayjs locales – English, Czech     |
 | PWA            | vite-plugin-pwa (Workbox precache, update prompt, install button)        |
 | Tests          | Vitest + jsdom                                                           |
 
@@ -40,7 +41,8 @@ src/
                   (each has api.ts with query/mutation hooks, components/, pages/)
   shared/ui/      generic, reusable UI wrappers (see below)
   theme/          theme presets + Mantine theme factory
-  lib/            query client, query keys, optimistic helper, dates, haptics
+  i18n/           i18next setup, language detection, catalogs (locales/en.ts is the source)
+  lib/            query client, query keys, optimistic helper, dates, fuzzy search, notifications
 ```
 
 ### Reusable UI kit (`src/shared/ui`)
@@ -67,6 +69,27 @@ Locally, each document is one `localStorage` key: `shared-todo/v1:<path>`. Chang
 - `write`: create, edit, complete and delete todos
 - `read`: view only
 - E-mail invitations only work for that address and can be used once. Link invitations can be used many times until they are revoked or expire (after 14 days).
+
+## Translations
+
+Every user-facing string goes through i18next (`useTranslation()` in components, `t()` from `@/i18n` elsewhere). React has no built-in i18n like Angular, and i18next is the most widely used library for it.
+
+- `src/i18n/locales/en.ts` is the source catalog. Its type makes keys autocomplete and type-check (`t('todos.add')`).
+- `cs.ts` must have the same shape (`satisfies Catalog<EnCatalog>`), so a missing key is a compile error. Czech plurals add `_few` (2–4) next to `_one` and `_other`.
+- Date formats are part of the catalog (`dates.format.*`), because Czech uses numeric dates ("po 2. 11.") instead of month names.
+- The data layer never returns display text. Services throw `AppError(code, reason)`, and the UI translates `errors.<reason>`.
+- Language: Settings → Language. The default, "System", uses the first supported language from `navigator.languages`, which follows the phone or browser language on iOS and Android. Changing it switches dayjs, Mantine date pickers and `<html lang>` as well.
+- To add a language: copy `cs.ts`, translate it, and register it in `SUPPORTED_LANGUAGES` and `LANGUAGE_NAMES` (`src/i18n/i18n.ts`).
+
+## Search
+
+The search box matches task titles fuzzily (`src/lib/fuzzy.ts`). The characters of the query only need to appear in order, so `tewi` finds "Set a due da**te** **wi**th quick picks". Matches at word starts and consecutive letters rank higher, and case and diacritics are ignored. While searching, results are sorted by relevance and the matched characters are highlighted in the theme color. Notes are matched by plain substring.
+
+## Profile photos
+
+- Google returns the account photo (`user.photoURL`), and the app stores it on the profile at every sign-in.
+- Apple Sign-In never shares a photo, so initials are shown instead. The same initials are the fallback when an image fails to load.
+- In the mock, the Google demo accounts come with bundled portraits (`public/avatars/`), and "Use another account" accepts an optional photo URL.
 
 ## Reminders
 
@@ -99,6 +122,17 @@ Locally, each document is one `localStorage` key: `shared-todo/v1:<path>`. Chang
 4. Switch the export in `src/services/createServices.ts`. Then delete `MockAccountPickerHost`, `accountPickerStore` and `demoAccounts`.
 
 No feature code needs to change.
+
+## Deployment (GitHub Pages)
+
+`.github/workflows/deploy.yml` lints, tests, builds and deploys to GitHub Pages whenever a `v*` tag is pushed. The version shown in Settings comes from the tag.
+
+```bash
+npm version patch          # or minor / major – bumps package.json, commits and creates the tag v0.1.1
+git push --follow-tags     # pushes the commit and the tag → build & deploy
+```
+
+One-time setup: in the repository, go to Settings → Pages → Source and choose **GitHub Actions**. The app uses a relative base and hash routing, so it works under `https://<user>.github.io/pwa-todo-list/` without any base-URL configuration. The workflow can also be started manually (Actions → Run workflow).
 
 ## Trying out sharing locally
 

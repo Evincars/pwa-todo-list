@@ -1,0 +1,7 @@
+.mark {
+  padding: 0 1px;
+  border-radius: 3px;
+  color: var(--mantine-primary-color-light-color);
+  background-color: var(--mantine-primary-color-light);
+  font-weight: 700;
+}

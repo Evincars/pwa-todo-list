@@ -4,6 +4,7 @@ import { IconChevronRight, IconSparkles } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 import type { TodoSections } from '@/domain/todoQuery';
 import type { Todo } from '@/domain/types';
+import { useTranslation } from '@/i18n';
 
 export interface TodoListViewProps {
   sections: TodoSections;
@@ -16,6 +17,7 @@ export interface TodoListViewProps {
 
 /** Active tasks plus a collapsible "Completed" section. */
 export const TodoListView = ({ sections, totalCount, showCompleted, canWrite, renderItem }: TodoListViewProps) => {
+  const { t } = useTranslation();
   const [completedOpen, completedHandlers] = useDisclosure(true);
 
   if (sections.active.length === 0 && sections.completed.length === 0) {
@@ -23,13 +25,9 @@ export const TodoListView = ({ sections, totalCount, showCompleted, canWrite, re
       <EmptyState
         icon={<IconSparkles />}
         variant="light"
-        title={totalCount === 0 ? 'Nothing here yet' : 'No matching tasks'}
+        title={totalCount === 0 ? t('todos.emptyTitle') : t('todos.noMatch')}
         description={
-          totalCount === 0
-            ? canWrite
-              ? 'Add your first task below.'
-              : 'Tasks added by others will appear here.'
-            : 'Try a different filter or search.'
+          totalCount === 0 ? (canWrite ? t('todos.emptyWritable') : t('todos.emptyReadonly')) : t('todos.tryDifferent')
         }
         py="xl"
       />
@@ -42,7 +40,7 @@ export const TodoListView = ({ sections, totalCount, showCompleted, canWrite, re
 
       {sections.active.length === 0 && sections.completed.length > 0 && (
         <Text ta="center" c="dimmed" size="sm" py="md">
-          🎉 All done!
+          {t('todos.allDone')}
         </Text>
       )}
 
@@ -55,7 +53,7 @@ export const TodoListView = ({ sections, totalCount, showCompleted, canWrite, re
                 style={{ transform: completedOpen ? 'rotate(90deg)' : undefined, transition: 'transform 150ms ease' }}
               />
               <Text size="sm" fw={600}>
-                Completed
+                {t('todos.completed')}
               </Text>
               <Text size="sm" c="dimmed">
                 {sections.completed.length}

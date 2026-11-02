@@ -1,10 +1,15 @@
 import dayjs, { type Dayjs } from 'dayjs';
 import type { DueValue } from './dates';
 
+/** How the suggestion relates to the due date – rendered by the UI ("3 hours before", "The evening before"). */
+export type ReminderLead =
+  | { kind: 'eveningBefore' }
+  | { kind: 'thatDay'; hour: number }
+  | { kind: 'before'; minutes: number };
+
 export interface ReminderSuggestion {
   at: Dayjs;
-  /** Relation to the due date, e.g. "3 hours before", "The evening before". */
-  label: string;
+  lead: ReminderLead;
 }
 
 /** Earliest hour a same-day reminder is suggested for. */
@@ -18,14 +23,8 @@ const ALL_DAY_REMINDER_HOUR = 9;
 
 const at = (date: Dayjs, hour: number) => date.hour(hour).minute(0).second(0).millisecond(0);
 
-const leadLabel = (due: Dayjs, reminder: Dayjs): string => {
-  if (!reminder.isSame(due, 'day')) return 'The evening before';
-  const minutes = due.diff(reminder, 'minute');
-  if (minutes < 60) return `${minutes} minutes before`;
-  const hours = Math.floor(minutes / 60);
-  const rest = minutes % 60;
-  return rest ? `${hours} h ${rest} min before` : `${hours} ${hours === 1 ? 'hour' : 'hours'} before`;
-};
+const leadOf = (due: Dayjs, reminder: Dayjs): ReminderLead =>
+  reminder.isSame(due, 'day') ? { kind: 'before', minutes: due.diff(reminder, 'minute') } : { kind: 'eveningBefore' };
 
 /**
  * Default reminder for a due date – "a few hours before, on the same day":
@@ -41,7 +40,7 @@ export const suggestReminder = ({ dueAt, dueHasTime }: DueValue, now: Dayjs = da
 
   if (!dueHasTime) {
     const morning = at(due, ALL_DAY_REMINDER_HOUR);
-    return morning.isAfter(now) ? { at: morning, label: `That day, ${ALL_DAY_REMINDER_HOUR}:00` } : null;
+    return morning.isAfter(now) ? { at: morning, lead: { kind: 'thatDay', hour: ALL_DAY_REMINDER_HOUR } } : null;
   }
 
   let reminder: Dayjs;
@@ -57,14 +56,13 @@ export const suggestReminder = ({ dueAt, dueHasTime }: DueValue, now: Dayjs = da
     if (!shortly.isAfter(now)) return null;
     reminder = shortly;
   }
-  return { at: reminder, label: leadLabel(due, reminder) };
+  return { at: reminder, lead: leadOf(due, reminder) };
 };
 
 export type QuickReminderKey = 'laterToday' | 'tomorrow' | 'nextWeek';
 
 export interface QuickReminderOption {
   key: QuickReminderKey;
-  label: string;
   at: Dayjs;
 }
 
@@ -72,9 +70,9 @@ export interface QuickReminderOption {
 export const getQuickReminderOptions = (now: Dayjs = dayjs()): QuickReminderOption[] => {
   const options: QuickReminderOption[] = [];
   const later = now.add(3, 'hour').startOf('hour');
-  if (later.isSame(now, 'day') && later.hour() <= 22) options.push({ key: 'laterToday', label: 'Later today', at: later });
-  options.push({ key: 'tomorrow', label: 'Tomorrow', at: at(now.add(1, 'day'), 9) });
+  if (later.isSame(now, 'day') && later.hour() <= 22) options.push({ key: 'laterToday', at: later });
+  options.push({ key: 'tomorrow', at: at(now.add(1, 'day'), 9) });
   const daysToMonday = (8 - now.day()) % 7 || 7;
-  options.push({ key: 'nextWeek', label: 'Next week', at: at(now.add(daysToMonday, 'day'), 9) });
+  options.push({ key: 'nextWeek', at: at(now.add(daysToMonday, 'day'), 9) });
   return options;
 };

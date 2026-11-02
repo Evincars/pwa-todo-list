@@ -1,5 +1,6 @@
 import { UnstyledButton } from '@mantine/core';
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { useTranslation } from '@/i18n';
 import classes from './ClockTimePicker.module.css';
 
 export type ClockMode = 'hours' | 'minutes';
@@ -34,6 +35,7 @@ const HOUR_POSITIONS = Array.from({ length: 12 }, (_, index) => index);
  * hours first (inner ring = 13–00 in 24-hour mode), then it jumps to minutes.
  */
 export const ClockTimePicker = ({ value, onChange, format = '24h', minuteStep = 5, size = 248 }: ClockTimePickerProps) => {
+  const { t } = useTranslation();
   const { hours, minutes } = parse(value);
   const [mode, setMode] = useState<ClockMode>('hours');
   const dialRef = useRef<HTMLDivElement>(null);
@@ -120,7 +122,7 @@ export const ClockTimePicker = ({ value, onChange, format = '24h', minuteStep = 
           className={classes.segment}
           data-active={mode === 'hours' || undefined}
           onClick={() => setMode('hours')}
-          aria-label="Select hours"
+          aria-label={t('ui.clock.selectHours')}
         >
           {is12h ? displayHours : pad(displayHours)}
         </UnstyledButton>
@@ -129,17 +131,17 @@ export const ClockTimePicker = ({ value, onChange, format = '24h', minuteStep = 
           className={classes.segment}
           data-active={mode === 'minutes' || undefined}
           onClick={() => setMode('minutes')}
-          aria-label="Select minutes"
+          aria-label={t('ui.clock.selectMinutes')}
         >
           {pad(minutes)}
         </UnstyledButton>
         {is12h && (
           <div className={classes.period}>
             <UnstyledButton data-active={!isPm || undefined} onClick={() => isPm && emit(hours - 12, minutes)}>
-              AM
+              {t('ui.clock.am')}
             </UnstyledButton>
             <UnstyledButton data-active={isPm || undefined} onClick={() => !isPm && emit(hours + 12, minutes)}>
-              PM
+              {t('ui.clock.pm')}
             </UnstyledButton>
           </div>
         )}
@@ -151,7 +153,7 @@ export const ClockTimePicker = ({ value, onChange, format = '24h', minuteStep = 
         style={{ width: size, height: size }}
         role="slider"
         tabIndex={0}
-        aria-label={mode === 'hours' ? 'Hours' : 'Minutes'}
+        aria-label={mode === 'hours' ? t('ui.clock.hours') : t('ui.clock.minutes')}
         aria-valuemin={0}
         aria-valuemax={mode === 'hours' ? 23 : 59}
         aria-valuenow={mode === 'hours' ? hours : minutes}

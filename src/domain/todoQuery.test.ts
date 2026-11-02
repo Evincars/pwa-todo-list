@@ -103,3 +103,17 @@ describe('groupTodosByDay', () => {
     expect(topPriority([])).toBe('none');
   });
 });
+
+describe('queryTodos search', () => {
+  it('matches titles fuzzily, ranks by relevance and reports highlights', () => {
+    const loose = todo({ title: 'Get new iPhone', priority: 'urgent' });
+    const exact = todo({ title: 'Set a due date with quick picks' });
+    const byNotes = todo({ title: 'Something else', notes: 'remember TEWI code' });
+    const miss = todo({ title: 'Buy milk' });
+
+    const result = queryTodos([loose, exact, byNotes, miss], { filter: 'all', sort: 'smart', search: 'tewi' });
+    expect(result.active.map((t) => t.title)).toEqual(['Set a due date with quick picks', 'Get new iPhone', 'Something else']);
+    expect(result.highlights.get(exact.id)).toEqual([12, 13, 15, 16]);
+    expect(result.highlights.has(byNotes.id)).toBe(false);
+  });
+});

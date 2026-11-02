@@ -11,6 +11,7 @@ import {
 import dayjs from 'dayjs';
 import { useState, type ReactElement, type ReactNode } from 'react';
 import { useSettingsStore } from '@/features/settings/settingsStore';
+import { useTranslation } from '@/i18n';
 import { combineDateTime, formatQuickHint, getQuickDueOptions, NO_DUE, type DueValue, type QuickDueKey } from '@/lib/dates';
 import { OptionList, ResponsiveOverlay, type OptionItem } from '@/shared/ui';
 import { DateTimeSelector, type DateTimeSelection } from './DateTimeSelector';
@@ -44,6 +45,7 @@ export interface DueDatePickerProps {
  * "Pick a date & time" opens a calendar with a time grid.
  */
 export const DueDatePicker = ({ value, onChange, opened, onClose, target }: DueDatePickerProps) => {
+  const { t } = useTranslation();
   const timeFormat = useSettingsStore((state) => state.timeFormat);
   const [view, setView] = useState<'quick' | 'custom'>('quick');
 
@@ -59,16 +61,16 @@ export const DueDatePicker = ({ value, onChange, opened, onClose, target }: DueD
 
   const quickOptions: OptionItem<PickerAction>[] = getQuickDueOptions().map((option) => ({
     value: { type: 'quick', value: option.value },
-    label: option.label,
+    label: t(`due.quick.${option.key}`),
     icon: QUICK_ICONS[option.key],
     hint: formatQuickHint(option, timeFormat),
   }));
 
   const moreOptions: OptionItem<PickerAction>[] = [
-    { value: { type: 'custom' }, label: 'Pick a date & time', icon: <IconCalendarMonth size={18} /> },
+    { value: { type: 'custom' }, label: t('due.pick'), icon: <IconCalendarMonth size={18} /> },
   ];
   if (value.dueAt) {
-    moreOptions.push({ value: { type: 'clear' }, label: 'Remove due date', icon: <IconCalendarOff size={18} />, color: 'red' });
+    moreOptions.push({ value: { type: 'clear' }, label: t('due.remove'), icon: <IconCalendarOff size={18} />, color: 'red' });
   }
 
   const handleSelect = (action: PickerAction) => {
@@ -82,7 +84,7 @@ export const DueDatePicker = ({ value, onChange, opened, onClose, target }: DueD
       opened={opened}
       onClose={close}
       target={target}
-      title={view === 'quick' ? 'Due' : 'Pick a date & time'}
+      title={view === 'quick' ? t('due.title') : t('due.pick')}
       width={view === 'quick' ? 280 : 320}
     >
       {view === 'quick' ? (

@@ -1,24 +1,28 @@
 import { Group, Image, Stack, Text, ThemeIcon, Title } from '@mantine/core';
+import type { ParseKeys } from 'i18next';
 import { IconBolt, IconDeviceMobile, IconUsers } from '@tabler/icons-react';
 import { getRouteApi, useNavigate } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import type { AuthProviderId } from '@/domain/types';
+import { useTranslation } from '@/i18n';
+import { AuthorCredit } from '@/shared/ui';
 import { ProviderButton } from '../components/ProviderButton';
 import { useSignIn } from '../useSignIn';
 import classes from './LoginPage.module.css';
 
 const route = getRouteApi('/login');
 
-const FEATURES: { icon: ReactNode; text: string }[] = [
-  { icon: <IconUsers size={16} />, text: 'Share lists and control who can edit' },
-  { icon: <IconBolt size={16} />, text: 'Priorities, due dates and smart sorting' },
-  { icon: <IconDeviceMobile size={16} />, text: 'Installable, works offline' },
+const FEATURES: { icon: ReactNode; text: ParseKeys }[] = [
+  { icon: <IconUsers size={16} />, text: 'auth.features.share' },
+  { icon: <IconBolt size={16} />, text: 'auth.features.plan' },
+  { icon: <IconDeviceMobile size={16} />, text: 'auth.features.offline' },
 ];
 
 export const LoginPage = () => {
   const { redirect } = route.useSearch();
   const navigate = useNavigate();
   const signIn = useSignIn();
+  const { t } = useTranslation();
 
   const handleSignIn = (provider: AuthProviderId) =>
     signIn.mutate(provider, { onSuccess: () => void navigate({ href: redirect ?? '/', replace: true }) });
@@ -30,10 +34,10 @@ export const LoginPage = () => {
           <Image src={`${import.meta.env.BASE_URL}logo.svg`} alt="" className={classes.logo} />
           <div>
             <Title order={1} fz={32}>
-              Shared Todo
+              {t('app.name')}
             </Title>
             <Text c="dimmed" mt={4}>
-              Plan together. Get things done.
+              {t('auth.tagline')}
             </Text>
           </div>
         </Stack>
@@ -44,7 +48,7 @@ export const LoginPage = () => {
               <ThemeIcon variant="light" radius="xl" size="md">
                 {feature.icon}
               </ThemeIcon>
-              <Text size="sm">{feature.text}</Text>
+              <Text size="sm">{t(feature.text)}</Text>
             </Group>
           ))}
         </Stack>
@@ -54,9 +58,12 @@ export const LoginPage = () => {
           <ProviderButton provider="apple" onClick={() => handleSignIn('apple')} loading={signIn.isPending && signIn.variables === 'apple'} />
         </Stack>
 
-        <Text size="xs" c="dimmed" ta="center">
-          Demo build – sign-in is simulated and data is stored on this device.
-        </Text>
+        <Stack gap={4} align="center">
+          <Text size="xs" c="dimmed" ta="center">
+            {t('auth.demoNote')}
+          </Text>
+          <AuthorCredit />
+        </Stack>
       </Stack>
     </div>
   );

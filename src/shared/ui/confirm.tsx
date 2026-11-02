@@ -1,6 +1,7 @@
 import { Button, Group, Modal, Text } from '@mantine/core';
 import type { ReactNode } from 'react';
 import { create } from 'zustand';
+import { useTranslation } from '@/i18n';
 
 export interface ConfirmOptions {
   title: ReactNode;
@@ -32,8 +33,10 @@ const settle = (confirmed: boolean) => {
 /** Mount once near the root. */
 export const ConfirmDialogHost = () => {
   const request = useConfirmStore((state) => state.request);
+  const { t } = useTranslation();
   return (
-    <Modal opened={!!request} onClose={() => settle(false)} title={request?.title} centered radius="lg" size="sm">
+    // Above drawers and bottom sheets (z-index 200) that may have opened the dialog.
+    <Modal opened={!!request} onClose={() => settle(false)} title={request?.title} centered radius="lg" size="sm" zIndex={1000}>
       {request?.message && (
         <Text size="sm" c="dimmed" mb="lg">
           {request.message}
@@ -41,10 +44,10 @@ export const ConfirmDialogHost = () => {
       )}
       <Group justify="flex-end" gap="sm">
         <Button variant="default" onClick={() => settle(false)}>
-          {request?.cancelLabel ?? 'Cancel'}
+          {request?.cancelLabel ?? t('common.cancel')}
         </Button>
         <Button color={request?.danger ? 'red' : undefined} onClick={() => settle(true)} data-autofocus>
-          {request?.confirmLabel ?? 'Confirm'}
+          {request?.confirmLabel ?? t('common.confirm')}
         </Button>
       </Group>
     </Modal>

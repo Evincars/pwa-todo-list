@@ -5,7 +5,8 @@ import { reminderIdOf, type ISODateString, type ListId, type Reminder, type Remi
 import { useCurrentUser } from '@/features/auth/authStore';
 import { optimisticHandlers } from '@/lib/optimistic';
 import { queryKeys } from '@/lib/queryKeys';
-import { requestNotificationPermission } from '@/lib/systemNotifications';
+import { t } from '@/i18n';
+import { requestNotificationPermission, type NotificationSupport } from '@/lib/systemNotifications';
 import { useLiveInvalidation } from '@/lib/useLiveInvalidation';
 import { useServices } from '@/services/ServicesContext';
 import type { Services } from '@/services/types';
@@ -33,18 +34,18 @@ export const useListReminders = (listId: ListId): ReadonlyMap<TodoId, Reminder> 
   return useMemo(() => new Map((data ?? []).filter((r) => r.listId === listId).map((r) => [r.todoId, r])), [data, listId]);
 };
 
+const PERMISSION_WARNING = {
+  'ios-needs-install': 'iosInstall',
+  denied: 'denied',
+  unsupported: 'unsupported',
+  default: 'dismissed',
+} as const satisfies Record<Exclude<NotificationSupport, 'granted'>, string>;
+
 const warnIfBlocked = async () => {
   const support = await requestNotificationPermission();
   if (support === 'granted') return;
-  const message =
-    support === 'ios-needs-install'
-      ? 'On iPhone and iPad, add the app to your Home Screen (Share → Add to Home Screen) to get system notifications.'
-      : support === 'denied'
-        ? 'Notifications are blocked for this site. Reminders will only show while the app is open – allow them in browser settings.'
-        : support === 'unsupported'
-          ? 'This browser does not support notifications. Reminders will only show while the app is open.'
-          : 'Notifications were not allowed. Reminders will only show while the app is open.';
-  notifications.show({ id: 'notification-permission', title: 'Reminder saved', message, color: 'yellow', autoClose: 8000 });
+  const reason = PERMISSION_WARNING[support];
+  notifications.show({ id: 'notification-permission', title: t('reminders.saved'), message: t(`reminders.permission.${reason}`), color: 'yellow', autoClose: 8000 });
 };
 
 export interface SetReminderVariables {

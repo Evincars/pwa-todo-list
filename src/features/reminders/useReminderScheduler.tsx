@@ -5,6 +5,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useEffectEvent, useState } from 'react';
 import type { Reminder } from '@/domain/types';
 import { useSettingsStore } from '@/features/settings/settingsStore';
+import { t } from '@/i18n';
 import { formatDue } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { listenForNotificationClicks, showSystemNotification } from '@/lib/systemNotifications';
@@ -66,7 +67,7 @@ export const useReminderScheduler = () => {
       }
 
       if (!todo.completed) {
-        const body = [list.title, todo.dueAt && `Due ${formatDue(todo, timeFormat)}`].filter(Boolean).join(' · ');
+        const body = [list.title, todo.dueAt && t('reminders.due', { date: formatDue(todo, timeFormat) })].filter(Boolean).join(' · ');
         const url = `#/lists/${list.id}?task=${todo.id}`;
         const shownBySystem = document.visibilityState === 'hidden' && (await showSystemNotification({ title: todo.title, body, tag: reminder.id, url }));
         if (!shownBySystem) {
@@ -85,7 +86,7 @@ export const useReminderScheduler = () => {
                     void navigate({ to: '/lists/$listId', params: { listId: list.id }, search: { task: todo.id } });
                   }}
                 >
-                  Open
+                  {t('common.open')}
                 </Anchor>
               </>
             ),

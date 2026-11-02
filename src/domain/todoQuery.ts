@@ -1,28 +1,13 @@
 import dayjs from 'dayjs';
+import { fuzzyMatch } from '@/lib/fuzzy';
 import { PRIORITY_META } from './priority';
-import type { Todo } from './types';
+import type { Todo, TodoId } from './types';
 
 export const TODO_SORT_KEYS = ['smart', 'priority', 'dueDate', 'createdAt', 'title'] as const;
 export type TodoSortKey = (typeof TODO_SORT_KEYS)[number];
 
 export const TODO_FILTERS = ['all', 'today', 'planned', 'overdue', 'important'] as const;
 export type TodoFilter = (typeof TODO_FILTERS)[number];
-
-export const SORT_LABEL: Record<TodoSortKey, string> = {
-  smart: 'Smart (priority, then due date)',
-  priority: 'Priority',
-  dueDate: 'Due date',
-  createdAt: 'Recently added',
-  title: 'Alphabetically',
-};
-
-export const FILTER_LABEL: Record<TodoFilter, string> = {
-  all: 'All',
-  today: 'Today',
-  planned: 'Planned',
-  overdue: 'Overdue',
-  important: 'Important',
-};
 
 type Comparator<T> = (a: T, b: T) => number;
 
@@ -83,25 +68,49 @@ export interface TodoQuery {
 export interface TodoSections {
   active: Todo[];
   completed: Todo[];
+  /** Matched character positions in titles while searching. */
+  highlights: ReadonlyMap<TodoId, readonly number[]>;
 }
 
-/** Applies filter, search and sort; completed todos are split out and ordered by completion time. */
-export const queryTodos = (todos: readonly Todo[], { filter, sort, search }: TodoQuery): TodoSections => {
-  const needle = search.trim().toLowerCase();
-  const matches = todos.filter(
-    (todo) =>
-      FILTER_PREDICATES[filter](todo) &&
-      (!needle || todo.title.toLowerCase().includes(needle) || todo.notes.toLowerCase().includes(needle)),
-  );
+/** Notes only count when they contain the query literally – fuzzy matching long texts finds everything. */
+const NOTES_MATCH_SCORE = 1;
 
+const foldText = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+
+/**
+ * Applies filter, search and sort; completed todos are split out and ordered by completion time.
+ * While searching, titles are matched fuzzily and active results are ranked by relevance.
+ */
+export const queryTodos = (todos: readonly Todo[], { filter, sort, search }: TodoQuery): TodoSections => {
+  const query = search.trim();
+  const scores = new Map<TodoId, number>();
+  const highlights = new Map<TodoId, readonly number[]>();
+
+  const matches = todos.filter((todo) => {
+    if (!FILTER_PREDICATES[filter](todo)) return false;
+    if (!query) return true;
+    const match = fuzzyMatch(query, todo.title);
+    if (match) {
+      scores.set(todo.id, match.score);
+      highlights.set(todo.id, match.indices);
+      return true;
+    }
+    if (!foldText(todo.notes).includes(foldText(query))) return false;
+    scores.set(todo.id, NOTES_MATCH_SCORE);
+    return true;
+  });
+
+  const sorted = sortTodos(
+    matches.filter((todo) => !todo.completed),
+    sort,
+  );
   return {
-    active: sortTodos(
-      matches.filter((todo) => !todo.completed),
-      sort,
-    ),
+    // `sort` is stable: equally relevant results keep the chosen order.
+    active: query ? sorted.sort((a, b) => (scores.get(b.id) ?? 0) - (scores.get(a.id) ?? 0)) : sorted,
     completed: matches
       .filter((todo) => todo.completed)
       .sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? '')),
+    highlights,
   };
 };
 

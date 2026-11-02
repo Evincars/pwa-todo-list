@@ -9,7 +9,8 @@ import pkg from './package.json' with { type: 'json' };
 export default defineConfig({
   // Relative base keeps the build deployable under any sub-path (e.g. GitHub Pages).
   base: './',
-  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
+  // CI passes the pushed tag (see .github/workflows/deploy.yml); locally package.json wins.
+  define: { __APP_VERSION__: JSON.stringify(process.env.APP_VERSION || pkg.version) },
   plugins: [
     // Must come before the React plugin.
     tanstackRouter({ target: 'react', autoCodeSplitting: true }),

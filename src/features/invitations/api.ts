@@ -58,7 +58,7 @@ export const useRevokeInvitation = (listId: ListId) => {
       queryClient.setQueryData<Invitation[]>(queryKeys.invitations.byList(listId), (current) =>
         current?.filter((invitation) => invitation.id !== invitationId),
       ),
-    meta: { successMessage: 'Invitation revoked' },
+    meta: { successMessage: 'share.revoked' },
   });
 };
 

@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import { useState } from 'react';
 import { formatTime, TIME_PRESETS } from '@/lib/dates';
 import { useSettingsStore } from '@/features/settings/settingsStore';
+import { useTranslation } from '@/i18n';
 import { ClockTimePicker } from '@/shared/ui';
 
 export interface DateTimeSelection {
@@ -26,6 +27,7 @@ export interface DateTimeSelectorProps {
 
 /** "Pick a date & time" step: calendar + common times, "Other time…" opens the clock dial. */
 export const DateTimeSelector = ({ initial, timeOptional = false, validate, onSubmit, onCancel }: DateTimeSelectorProps) => {
+  const { t } = useTranslation();
   const timeFormat = useSettingsStore((state) => state.timeFormat);
   const [date, setDate] = useState(initial.date);
   const [withTime, setWithTime] = useState(!timeOptional || initial.time !== null);
@@ -43,7 +45,7 @@ export const DateTimeSelector = ({ initial, timeOptional = false, validate, onSu
         <ClockTimePicker value={time} onChange={setTime} format={timeFormat} />
         <Group justify="flex-end" gap="xs">
           <Button variant="default" onClick={() => setStep('date')}>
-            Back
+            {t('common.back')}
           </Button>
           <Button
             onClick={() => {
@@ -51,7 +53,7 @@ export const DateTimeSelector = ({ initial, timeOptional = false, validate, onSu
               setStep('date');
             }}
           >
-            Set {timeLabel}
+            {t('dateTime.setClock', { time: timeLabel })}
           </Button>
         </Group>
       </Stack>
@@ -70,7 +72,7 @@ export const DateTimeSelector = ({ initial, timeOptional = false, validate, onSu
         />
       </Group>
 
-      {timeOptional && <Switch label="Set time" checked={withTime} onChange={(event) => setWithTime(event.currentTarget.checked)} />}
+      {timeOptional && <Switch label={t('dateTime.setTime')} checked={withTime} onChange={(event) => setWithTime(event.currentTarget.checked)} />}
 
       {withTime && (
         <Stack gap="xs">
@@ -88,7 +90,7 @@ export const DateTimeSelector = ({ initial, timeOptional = false, validate, onSu
             leftSection={<IconClock size={14} />}
             onClick={() => setStep('clock')}
           >
-            {isPreset ? 'Other time…' : `Time: ${timeLabel}`}
+            {isPreset ? t('dateTime.otherTime') : t('dateTime.timeValue', { time: timeLabel })}
           </Button>
         </Stack>
       )}
@@ -101,10 +103,10 @@ export const DateTimeSelector = ({ initial, timeOptional = false, validate, onSu
 
       <Group justify="flex-end" gap="xs" mt="xs">
         <Button variant="default" onClick={onCancel}>
-          Back
+          {t('common.back')}
         </Button>
         <Button disabled={!!error} onClick={() => onSubmit(selection)}>
-          Save
+          {t('common.save')}
         </Button>
       </Group>
     </Stack>

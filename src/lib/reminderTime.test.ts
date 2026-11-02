@@ -11,7 +11,7 @@ describe('suggestReminder', () => {
   it('reminds 3 hours before daytime tasks', () => {
     const suggestion = suggestReminder(due('2026-11-02T15:00:00'), now);
     expect(fmt(suggestion)).toBe('Mon 12:00');
-    expect(suggestion?.label).toBe('3 hours before');
+    expect(suggestion?.lead).toEqual({ kind: 'before', minutes: 180 });
   });
 
   it('reminds 5 hours before evening tasks', () => {
@@ -21,7 +21,7 @@ describe('suggestReminder', () => {
   it('reminds the evening before early-morning tasks', () => {
     const suggestion = suggestReminder(due('2026-11-02T07:00:00'), now);
     expect(fmt(suggestion)).toBe('Sun 19:00');
-    expect(suggestion?.label).toBe('The evening before');
+    expect(suggestion?.lead).toEqual({ kind: 'eveningBefore' });
   });
 
   it('does not suggest reminders before 8:00 on the same day', () => {
@@ -35,7 +35,7 @@ describe('suggestReminder', () => {
   it('falls back to 30 minutes before when the default already passed', () => {
     const suggestion = suggestReminder(due('2026-11-01T12:00:00'), dayjs('2026-11-01T10:00:00'));
     expect(fmt(suggestion)).toBe('Sun 11:30');
-    expect(suggestion?.label).toBe('30 minutes before');
+    expect(suggestion?.lead).toEqual({ kind: 'before', minutes: 30 });
   });
 
   it('returns null without a due date or when it is too late', () => {

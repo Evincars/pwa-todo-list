@@ -2,10 +2,11 @@ import { Badge, Card, Group, Progress, Skeleton, Text } from '@mantine/core';
 import { IconAlertCircle, IconUsers } from '@tabler/icons-react';
 import { Link } from '@tanstack/react-router';
 import type { CSSProperties } from 'react';
-import { ACCESS_LABEL, getListAccess } from '@/domain/permissions';
+import { getListAccess } from '@/domain/permissions';
 import { isOverdue } from '@/domain/todoQuery';
 import type { TodoList, UserId } from '@/domain/types';
 import { useTodosQuery } from '@/features/todos/api';
+import { useTranslation } from '@/i18n';
 import { AvatarStack } from '@/shared/ui';
 import classes from './ListCard.module.css';
 import { ListIconView } from './ListIconView';
@@ -16,6 +17,7 @@ export interface ListCardProps {
 }
 
 export const ListCard = ({ list, currentUserId }: ListCardProps) => {
+  const { t } = useTranslation();
   const { data: todos } = useTodosQuery(list.id);
   const access = getListAccess(list, currentUserId);
   const members = Object.values(list.members);
@@ -43,13 +45,13 @@ export const ListCard = ({ list, currentUserId }: ListCardProps) => {
             </Text>
             {access !== 'owner' && (
               <Badge size="xs" variant="light" color={access === 'write' ? 'teal' : 'gray'}>
-                {ACCESS_LABEL[access]}
+                {t(`access.${access}`)}
               </Badge>
             )}
           </Group>
           {todos ? (
             <Text size="xs" c="dimmed">
-              {total === 0 ? 'No tasks yet' : `${done} of ${total} done`}
+              {total === 0 ? t('lists.card.noTasks') : t('lists.card.progress', { done, total })}
             </Text>
           ) : (
             <Skeleton h={10} w={80} mt={6} />
@@ -59,19 +61,19 @@ export const ListCard = ({ list, currentUserId }: ListCardProps) => {
             <Group gap={6}>
               {overdue > 0 && (
                 <Badge size="sm" color="red" variant="light" leftSection={<IconAlertCircle size={12} />}>
-                  {overdue} overdue
+                  {t('lists.card.overdue', { count: overdue })}
                 </Badge>
               )}
               {access !== 'owner' && (
                 <Text size="xs" c="dimmed">
-                  by {list.owner.displayName}
+                  {t('lists.card.by', { name: list.owner.displayName })}
                 </Text>
               )}
             </Group>
             {members.length > 0 ? (
               <AvatarStack users={[list.owner, ...members]} size="sm" />
             ) : (
-              <IconUsers size={16} color="var(--mantine-color-dimmed)" aria-label="Not shared" style={{ opacity: 0.4 }} />
+              <IconUsers size={16} color="var(--mantine-color-dimmed)" aria-label={t('lists.card.notShared')} style={{ opacity: 0.4 }} />
             )}
           </Group>
         </div>

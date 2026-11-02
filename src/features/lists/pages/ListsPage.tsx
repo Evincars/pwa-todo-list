@@ -6,16 +6,17 @@ import type { ReactNode } from 'react';
 import type { TodoList } from '@/domain/types';
 import { useCurrentUser } from '@/features/auth/authStore';
 import { InvitationsInbox } from '@/features/invitations/components/InvitationsInbox';
+import { useTranslation } from '@/i18n';
 import { PageHeader, QueryView, UserAvatar } from '@/shared/ui';
 import { useCreateList, useMyListsQuery } from '../api';
 import { ListCard } from '../components/ListCard';
 import { ListFormModal } from '../components/ListFormModal';
 
-const greeting = () => {
+const greetingKey = () => {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
+  if (hour < 12) return 'morning';
+  if (hour < 18) return 'afternoon';
+  return 'evening';
 };
 
 const ListSection = ({ title, lists, userId }: { title: ReactNode; lists: TodoList[]; userId: TodoList['owner']['id'] }) =>
@@ -33,7 +34,8 @@ const ListSection = ({ title, lists, userId }: { title: ReactNode; lists: TodoLi
   ) : null;
 
 export const ListsPage = () => {
-  useDocumentTitle('My lists · Shared Todo');
+  const { t } = useTranslation();
+  useDocumentTitle(t('app.pageTitle', { page: t('lists.title') }));
   const user = useCurrentUser();
   const listsQuery = useMyListsQuery();
   const createList = useCreateList();
@@ -43,10 +45,10 @@ export const ListsPage = () => {
   return (
     <>
       <PageHeader
-        title="My lists"
-        subtitle={`${greeting()}, ${user.displayName.split(' ')[0]}`}
+        title={t('lists.title')}
+        subtitle={t(`lists.greeting.${greetingKey()}`, { name: user.displayName.split(' ')[0] })}
         actions={
-          <ActionIcon component={Link} to="/settings" size="lg" radius="xl" aria-label="Profile & settings">
+          <ActionIcon component={Link} to="/settings" size="lg" radius="xl" aria-label={t('lists.profileAndSettings')}>
             <UserAvatar user={user} size={32} />
           </ActionIcon>
         }
@@ -69,20 +71,20 @@ export const ListsPage = () => {
                 <EmptyState
                   icon={<IconListCheck />}
                   variant="light"
-                  title="No lists yet"
-                  description="Create your first list and invite others to collaborate."
+                  title={t('lists.emptyTitle')}
+                  description={t('lists.emptyDescription')}
                   py="xl"
                 >
                   <EmptyState.Actions>
                     <Button leftSection={<IconPlus size={18} />} onClick={form.open}>
-                      Create a list
+                      {t('lists.createFirst')}
                     </Button>
                   </EmptyState.Actions>
                 </EmptyState>
               ) : (
                 <>
-                  <ListSection title="My lists" lists={lists.filter((l) => l.owner.id === user.id)} userId={user.id} />
-                  <ListSection title="Shared with me" lists={lists.filter((l) => l.owner.id !== user.id)} userId={user.id} />
+                  <ListSection title={t('lists.mine')} lists={lists.filter((l) => l.owner.id === user.id)} userId={user.id} />
+                  <ListSection title={t('lists.shared')} lists={lists.filter((l) => l.owner.id !== user.id)} userId={user.id} />
                 </>
               )
             }
@@ -92,7 +94,7 @@ export const ListsPage = () => {
 
       <Affix position={{ bottom: 'calc(var(--app-tabbar-height) + env(safe-area-inset-bottom) + 16px)', right: 16 }} zIndex={140}>
         <Button size="lg" radius="xl" leftSection={<IconPlus size={20} />} onClick={form.open} style={{ boxShadow: 'var(--mantine-shadow-lg)' }}>
-          New list
+          {t('lists.newList')}
         </Button>
       </Affix>
 

@@ -2,6 +2,8 @@ import { ActionIcon, Button, Group, Text, UnstyledButton, type MantineColor } fr
 import { IconChevronDown, IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useRef, type CSSProperties, type PointerEvent } from 'react';
+import { capitalize, formatDate } from '@/lib/dates';
+import { useTranslation } from '@/i18n';
 import classes from './AgendaCalendar.module.css';
 
 export type CalendarSpan = 'week' | 'month';
@@ -50,6 +52,7 @@ const visibleDays = (selected: Dayjs, span: CalendarSpan, weekStartsOn: 0 | 1): 
  * Days can carry a count bubble (events, tasks…). Data-agnostic via `getDayMeta`.
  */
 export const AgendaCalendar = ({ value, onChange, span, onSpanChange, weekStartsOn = 1, getDayMeta }: AgendaCalendarProps) => {
+  const { t } = useTranslation();
   const selected = dayjs(value);
   const today = dayjs();
   const days = visibleDays(selected, span, weekStartsOn);
@@ -67,7 +70,13 @@ export const AgendaCalendar = ({ value, onChange, span, onSpanChange, weekStarts
     if (Math.abs(dx) >= SWIPE_THRESHOLD) move(dx < 0 ? 1 : -1);
   };
 
-  const title = span === 'month' || days[0]!.isSame(days[6]!, 'month') ? selected.format('MMMM YYYY') : `${days[0]!.format('MMM')} – ${days[6]!.format('MMM YYYY')}`;
+  const first = days[0]!;
+  const last = days[days.length - 1]!;
+  const title = capitalize(
+    span === 'month' || first.isSame(last, 'month')
+      ? formatDate(selected, 'monthYear')
+      : `${formatDate(first, 'monthShort')} – ${formatDate(last, 'monthShort')} ${last.year()}`,
+  );
   const isTodayVisible = days.some((day) => day.isSame(today, 'day'));
 
   return (
@@ -79,13 +88,13 @@ export const AgendaCalendar = ({ value, onChange, span, onSpanChange, weekStarts
         <Group gap={2} wrap="nowrap">
           {(!isTodayVisible || !selected.isSame(today, 'day')) && (
             <Button size="compact-xs" variant="subtle" onClick={() => onChange(today.format(FORMAT))}>
-              Today
+              {t('ui.calendar.today')}
             </Button>
           )}
-          <ActionIcon variant="subtle" color="gray" onClick={() => move(-1)} aria-label={`Previous ${span}`}>
+          <ActionIcon variant="subtle" color="gray" onClick={() => move(-1)} aria-label={t(`ui.calendar.previous.${span}`)}>
             <IconChevronLeft size={18} />
           </ActionIcon>
-          <ActionIcon variant="subtle" color="gray" onClick={() => move(1)} aria-label={`Next ${span}`}>
+          <ActionIcon variant="subtle" color="gray" onClick={() => move(1)} aria-label={t(`ui.calendar.next.${span}`)}>
             <IconChevronRight size={18} />
           </ActionIcon>
         </Group>
@@ -94,7 +103,7 @@ export const AgendaCalendar = ({ value, onChange, span, onSpanChange, weekStarts
       <div className={classes.grid} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onPointerCancel={() => (swipeStart.current = null)}>
         {days.slice(0, 7).map((day) => (
           <Text key={`h-${day.day()}`} className={classes.weekday} aria-hidden>
-            {day.format('dd')}
+            {formatDate(day, 'weekdayInitial')}
           </Text>
         ))}
         {days.map((day) => {
@@ -111,7 +120,7 @@ export const AgendaCalendar = ({ value, onChange, span, onSpanChange, weekStarts
               data-today={day.isSame(today, 'day') || undefined}
               data-outside={(span === 'month' && !day.isSame(selected, 'month')) || undefined}
               aria-pressed={isSelected}
-              aria-label={`${day.format('dddd, D MMMM')}${count ? `, ${meta?.label ?? count}` : ''}`}
+              aria-label={`${capitalize(formatDate(day, 'dayLong'))}${count ? `, ${meta?.label ?? count}` : ''}`}
               style={meta?.color ? ({ '--count-color': `var(--mantine-color-${meta.color}-filled)` } as CSSProperties) : undefined}
             >
               <span className={classes.number}>{day.date()}</span>
@@ -126,7 +135,7 @@ export const AgendaCalendar = ({ value, onChange, span, onSpanChange, weekStarts
       <UnstyledButton
         className={classes.handle}
         onClick={() => onSpanChange(span === 'week' ? 'month' : 'week')}
-        aria-label={span === 'week' ? 'Show whole month' : 'Show one week'}
+        aria-label={span === 'week' ? t('ui.calendar.showMonth') : t('ui.calendar.showWeek')}
         aria-expanded={span === 'month'}
       >
         <IconChevronDown size={16} style={{ transform: span === 'month' ? 'rotate(180deg)' : undefined }} />

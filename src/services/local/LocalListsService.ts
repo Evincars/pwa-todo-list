@@ -40,7 +40,7 @@ export class LocalListsService implements ListsService {
   async createList(input: CreateListInput): Promise<TodoList> {
     const user = requireUser(this.auth);
     const title = input.title.trim();
-    if (!title) throw new AppError('invalid-argument', 'List name is required');
+    if (!title) throw new AppError('invalid-argument', 'listNameRequired');
     const now = nowISO();
     const list: TodoList = {
       id: nanoid(12) as ListId,
@@ -62,7 +62,7 @@ export class LocalListsService implements ListsService {
     const list = await this.fetch(listId);
     assertCanManage(list, user.id);
     const title = input.title?.trim();
-    if (input.title !== undefined && !title) throw new AppError('invalid-argument', 'List name is required');
+    if (input.title !== undefined && !title) throw new AppError('invalid-argument', 'listNameRequired');
     const updated: TodoList = { ...list, ...input, ...(title ? { title } : {}), updatedAt: nowISO() };
     await this.store.set(paths.list(listId), updated);
     return updated;
@@ -89,7 +89,7 @@ export class LocalListsService implements ListsService {
     const list = await this.fetch(listId);
     assertCanManage(list, user.id);
     const member = list.members[userId];
-    if (!member) throw new AppError('not-found', 'Member not found');
+    if (!member) throw new AppError('not-found', 'memberNotFound');
     const updated: TodoList = {
       ...list,
       members: { ...list.members, [userId]: { ...member, permission } },
@@ -109,7 +109,7 @@ export class LocalListsService implements ListsService {
   async leaveList(listId: ListId): Promise<void> {
     const user = requireUser(this.auth);
     const list = await this.fetch(listId);
-    if (list.owner.id === user.id) throw new AppError('failed-precondition', 'The owner cannot leave their own list');
+    if (list.owner.id === user.id) throw new AppError('failed-precondition', 'ownerCannotLeave');
     assertCanRead(list, user.id);
     await this.withoutMember(list, user.id);
   }
@@ -141,7 +141,7 @@ export class LocalListsService implements ListsService {
 
   private async fetch(listId: ListId): Promise<TodoList> {
     const list = await this.store.get<TodoList>(paths.list(listId));
-    if (!list) throw new AppError('not-found', 'This list does not exist or was deleted');
+    if (!list) throw new AppError('not-found', 'listNotFound');
     return list;
   }
 }

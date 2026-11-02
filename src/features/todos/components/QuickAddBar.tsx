@@ -6,6 +6,7 @@ import type { CreateTodoInput, ISODateString, Priority } from '@/domain/types';
 import { ReminderPicker } from '@/features/reminders/components/ReminderPicker';
 import { useSettingsStore } from '@/features/settings/settingsStore';
 import { formatDue, formatReminder, NO_DUE, type DueValue } from '@/lib/dates';
+import { useTranslation } from '@/i18n';
 import { haptic } from '@/lib/haptics';
 import { suggestReminder } from '@/lib/reminderTime';
 import { DueDatePicker } from './DueDatePicker';
@@ -31,7 +32,8 @@ const clearButton = (label: string, onClear: () => void) => (
 );
 
 /** Always-visible composer pinned to the bottom – type and hit Enter, optional due date, priority & reminder. */
-export const QuickAddBar = ({ onAdd, defaultDue = NO_DUE, placeholder = 'Add a task' }: QuickAddBarProps) => {
+export const QuickAddBar = ({ onAdd, defaultDue = NO_DUE, placeholder }: QuickAddBarProps) => {
+  const { t } = useTranslation();
   const defaultPriority = useSettingsStore((state) => state.defaultPriority);
   const autoReminder = useSettingsStore((state) => state.autoReminder);
   const timeFormat = useSettingsStore((state) => state.timeFormat);
@@ -77,15 +79,15 @@ export const QuickAddBar = ({ onAdd, defaultDue = NO_DUE, placeholder = 'Add a t
           onChange={(event) => setTitle(event.currentTarget.value)}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          placeholder={placeholder}
-          aria-label="New task title"
+          placeholder={placeholder ?? t('todos.add')}
+          aria-label={t('todos.newTitleAria')}
           enterKeyHint="done"
           maxLength={200}
           classNames={{ input: classes.input }}
           leftSection={<IconCircleDashed size={20} />}
           rightSectionWidth={44}
           rightSection={
-            <ActionIcon type="submit" variant="filled" radius="xl" size="md" disabled={!title.trim()} aria-label="Add task">
+            <ActionIcon type="submit" variant="filled" radius="xl" size="md" disabled={!title.trim()} aria-label={t('todos.addAria')}>
               <IconArrowUp size={18} />
             </ActionIcon>
           }
@@ -104,10 +106,10 @@ export const QuickAddBar = ({ onAdd, defaultDue = NO_DUE, placeholder = 'Add a t
                   radius="xl"
                   variant={due.dueAt ? 'light' : 'default'}
                   leftSection={<IconCalendarDue size={14} />}
-                  rightSection={due.dueAt ? clearButton('Clear due date', () => setDue(NO_DUE)) : null}
+                  rightSection={due.dueAt ? clearButton(t('todos.clearDue'), () => setDue(NO_DUE)) : null}
                   onClick={dueHandlers.toggle}
                 >
-                  {due.dueAt ? formatDue(due, timeFormat) : 'Due date'}
+                  {due.dueAt ? formatDue(due, timeFormat) : t('todos.dueDate')}
                 </Button>
               }
             />
@@ -124,11 +126,11 @@ export const QuickAddBar = ({ onAdd, defaultDue = NO_DUE, placeholder = 'Add a t
                   radius="xl"
                   variant={remindAt ? 'light' : 'default'}
                   leftSection={<IconBell size={14} />}
-                  rightSection={remindAt ? clearButton('Clear reminder', () => setRemindAt(null)) : null}
+                  rightSection={remindAt ? clearButton(t('todos.clearReminder'), () => setRemindAt(null)) : null}
                   onClick={reminderHandlers.toggle}
-                  aria-label={remindAt ? undefined : 'Remind me'}
+                  aria-label={remindAt ? undefined : t('todos.remindMe')}
                 >
-                  {remindAt ? formatReminder(remindAt, timeFormat) : 'Remind'}
+                  {remindAt ? formatReminder(remindAt, timeFormat) : t('todos.remind')}
                 </Button>
               }
             />

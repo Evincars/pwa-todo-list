@@ -2,7 +2,7 @@ import { Button, EmptyState } from '@mantine/core';
 import { IconAlertTriangle } from '@tabler/icons-react';
 import type { UseQueryResult } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { getErrorMessage } from '@/domain/errors';
+import { getErrorMessage, useTranslation } from '@/i18n';
 
 export interface QueryViewProps<TData> {
   query: Pick<UseQueryResult<TData>, 'data' | 'error' | 'isPending' | 'refetch'>;
@@ -14,6 +14,7 @@ export interface QueryViewProps<TData> {
 
 /** Declarative pending / error / success switch for a TanStack query. */
 export const QueryView = <TData,>({ query, loading, children, renderError }: QueryViewProps<TData>) => {
+  const { t } = useTranslation();
   if (query.isPending) return <>{loading}</>;
   if (query.error) {
     return renderError ? (
@@ -23,13 +24,13 @@ export const QueryView = <TData,>({ query, loading, children, renderError }: Que
         icon={<IconAlertTriangle />}
         variant="light"
         color="red"
-        title="Couldn't load data"
+        title={t('ui.couldntLoad')}
         description={getErrorMessage(query.error)}
         py="xl"
       >
         <EmptyState.Actions>
           <Button variant="light" onClick={() => void query.refetch()}>
-            Try again
+            {t('common.tryAgain')}
           </Button>
         </EmptyState.Actions>
       </EmptyState>

@@ -9,10 +9,17 @@ import { App } from './app/App';
 import { createAppRouter } from './app/router';
 import { useAccountPickerStore } from './features/auth/accountPickerStore';
 import { bindAuthStore } from './features/auth/authStore';
+import { useSettingsStore } from './features/settings/settingsStore';
+import { applyLanguage } from './i18n';
 import { createQueryClient } from './lib/queryClient';
 import { services } from './services/createServices';
 
 const bootstrap = async () => {
+  // Before the first render, so nothing flashes in the wrong language.
+  applyLanguage(useSettingsStore.getState().language);
+  useSettingsStore.subscribe((state, previous) => state.language !== previous.language && applyLanguage(state.language));
+  window.addEventListener('languagechange', () => applyLanguage(useSettingsStore.getState().language));
+
   const queryClient = createQueryClient();
   const router = createAppRouter({ queryClient, services });
 

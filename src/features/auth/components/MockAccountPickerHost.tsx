@@ -2,6 +2,7 @@ import { Badge, Button, Divider, Group, Stack, Text, TextInput } from '@mantine/
 import { useForm } from '@mantine/form';
 import { IconChevronRight, IconUserPlus } from '@tabler/icons-react';
 import { useState } from 'react';
+import { useTranslation } from '@/i18n';
 import { OptionList, ResponsiveModal, UserAvatar } from '@/shared/ui';
 import { useAccountPickerStore } from '../accountPickerStore';
 import { DEMO_ACCOUNTS } from '../demoAccounts';
@@ -11,6 +12,7 @@ import { AppleLogo, GoogleLogo } from './ProviderLogos';
 interface CustomAccountForm {
   displayName: string;
   email: string;
+  photoURL: string;
 }
 
 /**
@@ -21,12 +23,13 @@ export const MockAccountPickerHost = () => {
   const request = useAccountPickerStore((state) => state.request);
   const complete = useAccountPickerStore((state) => state.complete);
   const [customMode, setCustomMode] = useState(false);
+  const { t } = useTranslation();
 
   const form = useForm<CustomAccountForm>({
-    initialValues: { displayName: '', email: '' },
+    initialValues: { displayName: '', email: '', photoURL: '' },
     validate: {
-      displayName: (value) => (value.trim().length < 2 ? 'Enter your name' : null),
-      email: (value) => (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim()) ? null : 'Enter a valid e-mail'),
+      displayName: (value) => (value.trim().length < 2 ? t('auth.nameRequired') : null),
+      email: (value) => (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim()) ? null : t('auth.emailInvalid')),
     },
   });
 
@@ -47,30 +50,42 @@ export const MockAccountPickerHost = () => {
       title={
         <Group gap="xs">
           {provider === 'google' ? <GoogleLogo /> : <AppleLogo />}
-          <Text fw={600}>Sign in with {PROVIDER_LABEL[provider]}</Text>
+          <Text fw={600}>{t('auth.signInWith', { provider: PROVIDER_LABEL[provider] })}</Text>
           <Badge size="xs" variant="light" color="gray">
-            mock
+            {t('auth.mock')}
           </Badge>
         </Group>
       }
     >
       {customMode ? (
-        <form onSubmit={form.onSubmit((values) => close(values))}>
+        <form onSubmit={form.onSubmit(({ photoURL, ...values }) => close({ ...values, photoURL: photoURL.trim() || null }))}>
           <Stack>
-            <TextInput label="Name" placeholder="Jane Doe" data-autofocus {...form.getInputProps('displayName')} />
-            <TextInput label="E-mail" placeholder="jane@example.com" type="email" {...form.getInputProps('email')} />
+            <TextInput label={t('auth.name')} placeholder={t('auth.namePlaceholder')} data-autofocus {...form.getInputProps('displayName')} />
+            <TextInput label={t('auth.email')} placeholder={t('auth.emailPlaceholder')} type="email" {...form.getInputProps('email')} />
+            {provider === 'google' && (
+              <TextInput
+                label={t('auth.photo')}
+                placeholder="https://…"
+                type="url"
+                leftSection={<UserAvatar user={{ displayName: form.values.displayName || '?', photoURL: form.values.photoURL || null }} size={22} />}
+                {...form.getInputProps('photoURL')}
+              />
+            )}
+            <Text size="xs" c="dimmed">
+              {t('auth.photoHint')}
+            </Text>
             <Group justify="space-between">
               <Button variant="subtle" onClick={() => setCustomMode(false)}>
-                Back
+                {t('common.back')}
               </Button>
-              <Button type="submit">Continue</Button>
+              <Button type="submit">{t('common.continue')}</Button>
             </Group>
           </Stack>
         </form>
       ) : (
         <Stack gap={4}>
           <Text size="sm" c="dimmed" mb="xs">
-            Choose an account to continue to Shared Todo
+            {t('auth.chooseAccount')}
           </Text>
           <OptionList
             options={accounts.map((account) => ({
@@ -84,10 +99,10 @@ export const MockAccountPickerHost = () => {
           />
           <Divider my="xs" />
           <Button variant="subtle" leftSection={<IconUserPlus size={18} />} justify="flex-start" onClick={() => setCustomMode(true)}>
-            Use another account
+            {t('auth.useAnother')}
           </Button>
           <Text size="xs" c="dimmed" mt="xs">
-            Tip: sign in as different people to try sharing – all data lives in this browser.
+            {t('auth.tip')}
           </Text>
         </Stack>
       )}

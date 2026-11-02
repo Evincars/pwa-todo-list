@@ -1,5 +1,6 @@
 import { Button, type ButtonProps } from '@mantine/core';
 import type { AuthProviderId } from '@/domain/types';
+import { useTranslation } from '@/i18n';
 import { AppleLogo, GoogleLogo } from './ProviderLogos';
 
 export const PROVIDER_LABEL: Record<AuthProviderId, string> = { google: 'Google', apple: 'Apple' };
@@ -11,6 +12,7 @@ export interface ProviderButtonProps extends Omit<ButtonProps, 'children'> {
 
 /** Brand-compliant "Continue with …" buttons. */
 export const ProviderButton = ({ provider, ...props }: ProviderButtonProps) => {
+  const { t } = useTranslation();
   const isApple = provider === 'apple';
   return (
     <Button
@@ -23,7 +25,7 @@ export const ProviderButton = ({ provider, ...props }: ProviderButtonProps) => {
       styles={isApple ? { root: { backgroundColor: '#000', color: '#fff' } } : undefined}
       {...props}
     >
-      Continue with {PROVIDER_LABEL[provider]}
+      {t('auth.continueWith', { provider: PROVIDER_LABEL[provider] })}
     </Button>
   );
 };
