@@ -1,0 +1,59 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: var(--mantine-spacing-xs);
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  border-radius: var(--mantine-radius-md);
+  border: 2px solid transparent;
+  transition: border-color 120ms ease;
+
+  &[data-selected] {
+    border-color: var(--tile-accent);
+  }
+
+  @mixin hover {
+    background-color: var(--mantine-color-default-hover);
+  }
+}
+
+.preview {
+  position: relative;
+  display: flex;
+  height: 52px;
+  overflow: hidden;
+  border-radius: var(--mantine-radius-sm);
+  border: 1px solid var(--mantine-color-default-border);
+}
+
+.half {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px;
+}
+
+.bar {
+  height: 5px;
+  border-radius: 3px;
+}
+
+.check {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: white;
+  background-color: var(--tile-accent);
+}

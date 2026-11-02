@@ -1,0 +1,29 @@
+.content {
+  /* Fit the content instead of a fixed drawer height. */
+  height: auto;
+  border-top-left-radius: var(--mantine-radius-xl);
+  border-top-right-radius: var(--mantine-radius-xl);
+  max-height: calc(100dvh - 48px);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.header {
+  padding-top: 22px;
+  position: relative;
+}
+
+.header::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  width: 40px;
+  height: 4px;
+  margin-left: -20px;
+  border-radius: 2px;
+  background: var(--mantine-color-default-border);
+}
+
+.body {
+  padding-bottom: var(--mantine-spacing-lg);
+}

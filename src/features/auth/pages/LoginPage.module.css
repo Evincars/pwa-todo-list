@@ -1,0 +1,29 @@
+.root {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: calc(var(--mantine-spacing-xl) + env(safe-area-inset-top)) var(--mantine-spacing-lg)
+    calc(var(--mantine-spacing-xl) + env(safe-area-inset-bottom));
+  background:
+    radial-gradient(circle at 15% 10%, var(--mantine-primary-color-light) 0, transparent 45%),
+    radial-gradient(circle at 90% 85%, var(--mantine-color-grape-light) 0, transparent 40%),
+    var(--mantine-color-body);
+}
+
+.card {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.logo {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  box-shadow: var(--mantine-shadow-lg);
+}
+
+.feature {
+  color: var(--mantine-color-dimmed);
+}

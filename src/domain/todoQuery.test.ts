@@ -1,0 +1,87 @@
+import dayjs from 'dayjs';
+import { describe, expect, it } from 'vitest';
+import { isOverdue, queryTodos, sortTodos } from './todoQuery';
+import type { Priority, Todo, TodoId, UserId } from './types';
+
+let seq = 0;
+const todo = (overrides: Partial<Todo> = {}): Todo => {
+  seq += 1;
+  return {
+    id: `t${seq}` as TodoId,
+    listId: 'l1' as Todo['listId'],
+    title: `Task ${seq}`,
+    notes: '',
+    priority: 'none',
+    dueAt: null,
+    dueHasTime: false,
+    completed: false,
+    completedAt: null,
+    completedBy: null,
+    createdAt: dayjs('2026-01-01').add(seq, 'minute').toISOString(),
+    createdBy: { id: 'u1' as UserId, displayName: 'A', email: 'a@x.io', photoURL: null },
+    updatedAt: '',
+    updatedBy: 'u1' as UserId,
+    ...overrides,
+  };
+};
+
+describe('sortTodos', () => {
+  it('smart sort orders by priority, then due date, then newest', () => {
+    const low = todo({ title: 'low', priority: 'low' });
+    const urgentLate = todo({ title: 'urgent-late', priority: 'urgent', dueAt: '2026-02-10T00:00:00.000Z' });
+    const urgentSoon = todo({ title: 'urgent-soon', priority: 'urgent', dueAt: '2026-02-01T00:00:00.000Z' });
+    const none = todo({ title: 'none' });
+    const urgentNoDate = todo({ title: 'urgent-nodate', priority: 'urgent' });
+
+    expect(sortTodos([low, urgentLate, none, urgentNoDate, urgentSoon], 'smart').map((t) => t.title)).toEqual([
+      'urgent-soon',
+      'urgent-late',
+      'urgent-nodate',
+      'low',
+      'none',
+    ]);
+  });
+
+  it('does not mutate the input', () => {
+    const input = [todo({ priority: 'low' }), todo({ priority: 'high' })];
+    const copy = [...input];
+    sortTodos(input, 'priority');
+    expect(input).toEqual(copy);
+  });
+
+  it.each<[Priority[], Priority[]]>([[['low', 'urgent', 'medium', 'none', 'high'], ['urgent', 'high', 'medium', 'low', 'none']]])(
+    'priority sort %j → %j',
+    (input, expected) => {
+      expect(sortTodos(input.map((priority) => todo({ priority })), 'priority').map((t) => t.priority)).toEqual(expected);
+    },
+  );
+});
+
+describe('isOverdue', () => {
+  const now = dayjs('2026-03-10T12:00:00');
+
+  it('date-only tasks are overdue from the next day', () => {
+    expect(isOverdue({ dueAt: now.startOf('day').toISOString(), dueHasTime: false, completed: false }, now)).toBe(false);
+    expect(isOverdue({ dueAt: now.subtract(1, 'day').toISOString(), dueHasTime: false, completed: false }, now)).toBe(true);
+  });
+
+  it('timed tasks are overdue once the time passes; completed never are', () => {
+    const past = now.subtract(1, 'hour').toISOString();
+    expect(isOverdue({ dueAt: past, dueHasTime: true, completed: false }, now)).toBe(true);
+    expect(isOverdue({ dueAt: past, dueHasTime: true, completed: true }, now)).toBe(false);
+  });
+});
+
+describe('queryTodos', () => {
+  it('splits completed, filters and searches notes', () => {
+    const items = [
+      todo({ title: 'Buy milk', notes: 'oat' }),
+      todo({ title: 'Call mom', priority: 'high' }),
+      todo({ title: 'Done thing', completed: true, completedAt: '2026-01-02T00:00:00.000Z' }),
+    ];
+    expect(queryTodos(items, { filter: 'all', sort: 'smart', search: 'OAT' }).active.map((t) => t.title)).toEqual(['Buy milk']);
+    const important = queryTodos(items, { filter: 'important', sort: 'smart', search: '' });
+    expect(important.active.map((t) => t.title)).toEqual(['Call mom']);
+    expect(queryTodos(items, { filter: 'all', sort: 'smart', search: '' }).completed).toHaveLength(1);
+  });
+});

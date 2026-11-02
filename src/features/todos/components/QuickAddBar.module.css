@@ -1,0 +1,37 @@
+.root {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 150;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm) calc(var(--mantine-spacing-xs) + env(safe-area-inset-bottom));
+  background-color: color-mix(in srgb, var(--mantine-color-body) 90%, transparent);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+
+.inner {
+  max-width: var(--app-max-width);
+  margin: 0 auto;
+  padding: 6px;
+  border-radius: var(--mantine-radius-lg);
+  background-color: var(--mantine-color-default);
+  border: 1px solid var(--mantine-color-default-border);
+  box-shadow: var(--mantine-shadow-sm);
+  transition: border-color 150ms ease;
+
+  &:focus-within {
+    border-color: var(--mantine-primary-color-filled);
+  }
+}
+
+.input {
+  border: 0;
+  background: transparent;
+  font-size: 16px; /* prevents iOS zoom on focus */
+}
+
+.options {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 4px 2px;
+}

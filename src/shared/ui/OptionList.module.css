@@ -1,0 +1,28 @@
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  width: 100%;
+  padding: 10px var(--mantine-spacing-sm);
+  border-radius: var(--mantine-radius-md);
+  color: var(--mantine-color-text);
+  transition: background-color 120ms ease;
+
+  @mixin hover {
+    background-color: var(--mantine-color-default-hover);
+  }
+
+  &[data-selected] {
+    background-color: var(--mantine-primary-color-light);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.icon {
+  display: flex;
+  color: var(--option-color, var(--mantine-color-dimmed));
+}

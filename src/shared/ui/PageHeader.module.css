@@ -1,0 +1,24 @@
+.root {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding-top: env(safe-area-inset-top);
+  background-color: color-mix(in srgb, var(--mantine-color-body) 85%, transparent);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid var(--mantine-color-default-border);
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  min-height: 56px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 var(--mantine-spacing-sm);
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+}

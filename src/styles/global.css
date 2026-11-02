@@ -1,0 +1,42 @@
+/* Mantine styles live in `@layer mantine` (see main.tsx), so app CSS always takes precedence regardless of chunk order. */
+:root {
+  --app-max-width: 720px;
+  --app-tabbar-height: 64px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  overscroll-behavior-y: none;
+}
+
+body {
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-container {
+  width: 100%;
+  max-width: var(--app-max-width);
+  margin: 0 auto;
+  padding: var(--mantine-spacing-md);
+}
+
+/* Horizontal scroll rows (filter chips) without visible scrollbar. */
+.scroll-row {
+  display: flex;
+  gap: var(--mantine-spacing-xs);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.scroll-row::-webkit-scrollbar {
+  display: none;
+}

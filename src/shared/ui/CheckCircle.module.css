@@ -1,0 +1,49 @@
+.root {
+  --check-color: var(--mantine-primary-color-filled);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: var(--check-size, 24px);
+  height: var(--check-size, 24px);
+  border-radius: 50%;
+  border: 2px solid var(--check-color);
+  color: var(--mantine-color-white);
+  transition:
+    background-color 160ms ease,
+    transform 160ms ease;
+
+  & svg {
+    opacity: 0;
+    transform: scale(0.4);
+    transition:
+      opacity 160ms ease,
+      transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @mixin hover {
+    & svg {
+      opacity: 0.5;
+      transform: scale(0.8);
+      color: var(--check-color);
+    }
+  }
+
+  &[data-checked] {
+    background-color: var(--check-color);
+
+    & svg {
+      opacity: 1;
+      transform: scale(1);
+      color: var(--mantine-color-white);
+    }
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.85);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+}
