@@ -45,16 +45,19 @@ src/
 
 ### Reusable UI kit (`src/shared/ui`)
 
-`ResponsiveOverlay` (popover on desktop, bottom sheet on mobile), `ResponsiveModal`, `BottomSheet`, `OptionList<T>`, `SelectMenu<T>`, `SegmentedField<T>`, `SwatchPicker<T>`, `CheckCircle`, `QueryView<T>` (pending/error/data switch), `PageHeader`, `SettingsSection`/`SettingsRow`, `UserAvatar`/`AvatarStack`, and a promise-based `confirm()` dialog.
+`ResponsiveOverlay` (popover on desktop, bottom sheet on mobile), `ResponsiveModal`, `BottomSheet`, `OptionList<T>`, `SelectMenu<T>`, `SegmentedField<T>`, `SwatchPicker<T>`, `TilePicker<T>` (grouped icon/emoji grid), `ClockTimePicker` (Material / MS To Do analog dial), `AgendaCalendar` (week strip ↔ month grid with per-day count bubbles), `CheckCircle`, `QueryView<T>` (pending/error/data switch), `PageHeader`, `SettingsSection`/`SettingsRow`, `UserAvatar`/`AvatarStack`, and a promise-based `confirm()` dialog.
 
 ## Data model (Firestore-compatible)
 
 ```
 users/{uid}                        UserProfile
-lists/{listId}                     TodoList { owner, members: {uid: {permission: 'read'|'write'}}, memberIds[] }
+lists/{listId}                     TodoList { icon, owner, members: {uid: {permission: 'read'|'write'}}, memberIds[] }
 lists/{listId}/todos/{todoId}      Todo { priority, dueAt, dueHasTime, completed, createdBy, ... }
 invitations/{invitationId}         Invitation { kind: 'email'|'link', listId, email, permission, status, expiresAt }
+users/{uid}/reminders/{listId_todoId}  Reminder { listId, todoId, remindAt, firedAt }
 ```
+
+A list `icon` is either an emoji or a vector glyph token such as `glyph:radioactive`. The glyph registry is in `src/features/lists/listIcons.tsx`. Older local data that stored `emoji` is migrated when the app starts (`src/services/local/migrations.ts`).
 
 Locally, each document is one `localStorage` key: `shared-todo/v1:<path>`. Changes are broadcast within the tab and across tabs (`storage` event), which stands in for Firestore real-time listeners.
 
@@ -65,13 +68,34 @@ Locally, each document is one `localStorage` key: `shared-todo/v1:<path>`. Chang
 - `read`: view only
 - E-mail invitations only work for that address and can be used once. Link invitations can be used many times until they are revoked or expire (after 14 days).
 
+## Reminders
+
+- **Personal:** reminders are stored under each user, not on the task. Members of a shared list, including read-only ones, set their own reminders, and nobody else gets notified.
+- **Suggested time** (`src/lib/reminderTime.ts`, unit-tested):
+
+  | Due | Suggested reminder |
+  | --- | --- |
+  | Mon 15:00 | Mon 12:00 (3 hours before, never earlier than 8:00) |
+  | Tue 20:00 | Tue 15:00 (5 hours before, for evening tasks) |
+  | Mon 7:00 | Sun 19:00 (the evening before, for tasks before 10:00) |
+  | All-day | That day at 9:00 |
+
+  If the suggested time has already passed, the reminder falls back to 30 minutes before the due time. The reminder field is optional. The suggestion is the first quick pick, and there is a setting to apply it automatically to new tasks that have a due date.
+- **Delivery today:** `useReminderScheduler` runs inside the app.
+  - It schedules timers and catches up when the app becomes visible again.
+  - It skips tasks that are completed or deleted, and Web Locks stop two tabs from firing the same reminder.
+  - When the app is in the background, it shows a system notification (`ServiceWorkerRegistration.showNotification`). When the app is on screen, it shows an in-app toast.
+  - Tapping a notification opens the task. The `notificationclick` handler is in `public/sw-notifications.js`.
+  - The app asks for notification permission the first time someone sets a reminder. On iOS 16.4+, notifications only work after the app is added to the Home Screen.
+- **With Firebase:** the in-app scheduler only works while the app is running. To deliver reminders when the app is closed, store FCM tokens per user. A scheduled Cloud Function then queries `collectionGroup('reminders').where('firedAt', '==', null).where('remindAt', '<=', now)`, sends a web push for each one, and sets `firedAt`.
+
 ## Migrating to Firebase
 
 1. Implement `Services` from `src/services/types.ts`:
    - `FirebaseAuthService`: `signInWithPopup` with `GoogleAuthProvider` / `OAuthProvider('apple.com')`. `initialize()` → `auth.authStateReady()`. `isNewUser` → `getAdditionalUserInfo(result)`.
    - Firestore services: either a `FirestoreDocumentStore` that implements `DocumentStore` (the methods map 1:1 to `getDoc`/`setDoc`/`updateDoc`/`deleteDoc`/`query+where`/`writeBatch`/`onSnapshot`), or dedicated Firestore services.
 2. Turn `src/domain/permissions.ts` into `firestore.rules`.
-3. Move `acceptInvitation` to a callable Cloud Function. The invitee can't write `list.members` yet, so the client can't do it.
+3. Move `acceptInvitation` to a callable Cloud Function, because the invitee can't write `list.members` yet. Also add the reminder push function described above.
 4. Switch the export in `src/services/createServices.ts`. Then delete `MockAccountPickerHost`, `accountPickerStore` and `demoAccounts`.
 
 No feature code needs to change.

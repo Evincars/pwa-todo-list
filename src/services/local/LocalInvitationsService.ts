@@ -58,7 +58,8 @@ export class LocalInvitationsService implements InvitationsService {
       kind: input.kind,
       listId,
       listTitle: list.title,
-      listEmoji: list.emoji,
+      listIcon: list.icon,
+      listColor: list.color,
       email,
       // Invited members can only read unless the host decides otherwise.
       permission: input.permission ?? 'read',

@@ -16,6 +16,8 @@ export interface LocalStorageDocumentStoreOptions {
   storage?: Storage;
 }
 
+export const DEFAULT_NAMESPACE = 'shared-todo/v1';
+
 const segmentCount = (path: string) => path.split('/').length;
 
 const matches = <T extends DocumentData>(doc: T, { field, op, value }: WhereClause<T>): boolean => {
@@ -43,7 +45,7 @@ export class LocalStorageDocumentStore implements DocumentStore {
   private readonly storage: Storage;
   private readonly listeners = new Set<{ prefix: string; listener: (change: DocumentChange) => void }>();
 
-  constructor({ namespace = 'shared-todo/v1', latency = 120, storage = window.localStorage }: LocalStorageDocumentStoreOptions = {}) {
+  constructor({ namespace = DEFAULT_NAMESPACE, latency = 120, storage = window.localStorage }: LocalStorageDocumentStoreOptions = {}) {
     this.prefix = `${namespace}:`;
     this.latency = latency;
     this.storage = storage;

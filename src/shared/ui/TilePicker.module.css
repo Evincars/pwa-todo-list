@@ -1,0 +1,19 @@
+.tile {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  line-height: 1;
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-default);
+  transition: transform 100ms ease;
+
+  &:active {
+    transform: scale(0.92);
+  }
+
+  &[data-selected] {
+    background: var(--mantine-primary-color-light);
+    outline: 2px solid var(--mantine-primary-color-filled);
+  }
+}

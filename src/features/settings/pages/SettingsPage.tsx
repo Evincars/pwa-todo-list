@@ -1,6 +1,7 @@
 import { Badge, Button, Center, Group, Paper, Select, Slider, Stack, Switch, Text } from '@mantine/core';
 import { useDocumentTitle } from '@mantine/hooks';
 import {
+  IconBell,
   IconChecklist,
   IconDatabase,
   IconDeviceDesktop,
@@ -17,6 +18,9 @@ import { useCurrentUser } from '@/features/auth/authStore';
 import { PROVIDER_LABEL } from '@/features/auth/components/ProviderButton';
 import { AppleLogo, GoogleLogo } from '@/features/auth/components/ProviderLogos';
 import { useSignOut } from '@/features/auth/useSignIn';
+import { useNotificationSupport } from '@/features/reminders/useNotificationSupport';
+import { notify } from '@/lib/notify';
+import { showSystemNotification, type NotificationSupport } from '@/lib/systemNotifications';
 import { useServices } from '@/services/ServicesContext';
 import { useInstallPrompt } from '@/shared/hooks/useInstallPrompt';
 import { confirm, PageHeader, SegmentedField, SettingsRow, SettingsSection, UserAvatar } from '@/shared/ui';
@@ -55,6 +59,54 @@ const ProfileCard = () => {
         Sign out
       </Button>
     </Paper>
+  );
+};
+
+const PERMISSION_DESCRIPTION: Record<NotificationSupport, string> = {
+  granted: 'Reminders appear as system notifications',
+  default: 'Allow notifications to get reminders on this device',
+  denied: 'Blocked – allow notifications for this site in browser settings',
+  unsupported: 'Not supported by this browser – reminders show inside the app',
+  'ios-needs-install': 'On iPhone/iPad, add the app to the Home Screen first (Share → Add to Home Screen)',
+};
+
+const NotificationsSection = () => {
+  const { support, request } = useNotificationSupport();
+  const autoReminder = useSettingsStore((state) => state.autoReminder);
+  const setSetting = useSettingsStore((state) => state.setSetting);
+
+  const sendTest = async () => {
+    const shown = await showSystemNotification({ title: 'Test reminder 🔔', body: 'Notifications are working.', tag: 'test' });
+    if (!shown) notify.error(new Error('The notification could not be shown.'));
+  };
+
+  return (
+    <SettingsSection title="Notifications" icon={<IconBell size={16} color="var(--mantine-color-dimmed)" />}>
+      <SettingsRow
+        label="System notifications"
+        description={PERMISSION_DESCRIPTION[support]}
+        control={
+          support === 'granted' ? (
+            <Button size="xs" variant="default" onClick={() => void sendTest()}>
+              Test
+            </Button>
+          ) : support === 'default' ? (
+            <Button size="xs" variant="light" onClick={() => void request()}>
+              Enable
+            </Button>
+          ) : (
+            <Badge color={support === 'denied' ? 'red' : 'gray'} variant="light">
+              {support === 'denied' ? 'Blocked' : 'Unavailable'}
+            </Badge>
+          )
+        }
+      />
+      <SettingsRow
+        label="Add reminders automatically"
+        description="New tasks with a due date get the suggested reminder – e.g. due 15:00 → remind 12:00, due 7:00 → the evening before"
+        control={<Switch checked={autoReminder} onChange={(e) => setSetting('autoReminder', e.currentTarget.checked)} />}
+      />
+    </SettingsSection>
   );
 };
 
@@ -186,6 +238,8 @@ export const SettingsPage = () => {
               control={<Switch checked={settings.haptics} onChange={(e) => setSetting('haptics', e.currentTarget.checked)} />}
             />
           </SettingsSection>
+
+          <NotificationsSection />
 
           <SettingsSection title="App & data" icon={<IconDatabase size={16} color="var(--mantine-color-dimmed)" />}>
             <SettingsRow

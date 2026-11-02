@@ -6,6 +6,7 @@ import { getErrorMessage } from '@/domain/errors';
 import type { ListId } from '@/domain/types';
 import { useCurrentUser } from '@/features/auth/authStore';
 import { useServices } from '@/services/ServicesContext';
+import { ListIconView } from '@/features/lists/components/ListIconView';
 import { UserAvatar } from '@/shared/ui';
 import { invitationQueryOptions, useAcceptInvitation } from '../api';
 
@@ -55,7 +56,7 @@ export const AcceptInvitationPage = () => {
       <Card withBorder radius="xl" padding="xl" maw={400} w="100%">
         <Stack align="center" ta="center" gap="md">
           <Text fz={56} lh={1}>
-            {data.listEmoji}
+            <ListIconView icon={data.listIcon} color={data.listColor} size={56} />
           </Text>
           <div>
             <Text size="sm" c="dimmed">

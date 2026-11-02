@@ -59,7 +59,11 @@ export const useCreateTodo = (listId: ListId) => {
   });
 
   /** Client-generated id makes the optimistic item stable across the server round-trip. */
-  const createTodo = (input: CreateTodoInput) => mutation.mutate({ ...input, id: nanoid(14) as TodoId });
+  const createTodo = (input: CreateTodoInput): TodoId => {
+    const id = nanoid(14) as TodoId;
+    mutation.mutate({ ...input, id });
+    return id;
+  };
   return { ...mutation, createTodo };
 };
 

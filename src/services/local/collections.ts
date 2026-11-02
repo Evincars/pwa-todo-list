@@ -1,4 +1,4 @@
-import type { InvitationId, ListId, TodoId, UserId } from '@/domain/types';
+import type { InvitationId, ListId, ReminderId, TodoId, UserId } from '@/domain/types';
 
 /** Firestore-compatible collection layout. */
 export const paths = {
@@ -10,4 +10,6 @@ export const paths = {
   todo: (listId: ListId, todoId: TodoId) => `lists/${listId}/todos/${todoId}`,
   invitations: 'invitations',
   invitation: (invitationId: InvitationId) => `invitations/${invitationId}`,
+  reminders: (userId: UserId) => `users/${userId}/reminders`,
+  reminder: (userId: UserId, reminderId: ReminderId) => `users/${userId}/reminders/${reminderId}`,
 } as const;

@@ -1,5 +1,11 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 import { useAuthStore } from '@/features/auth/authStore';
+import { useReminderScheduler } from '@/features/reminders/useReminderScheduler';
+
+const AuthedLayout = () => {
+  useReminderScheduler();
+  return <Outlet />;
+};
 
 /** Guard for everything that requires a signed-in user. */
 export const Route = createFileRoute('/_authed')({
@@ -10,5 +16,5 @@ export const Route = createFileRoute('/_authed')({
     }
     return { user };
   },
-  component: Outlet,
+  component: AuthedLayout,
 });

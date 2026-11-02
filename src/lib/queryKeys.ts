@@ -1,4 +1,4 @@
-import type { InvitationId, ListId } from '@/domain/types';
+import type { InvitationId, ListId, UserId } from '@/domain/types';
 
 /** Single source of truth for TanStack Query keys (hierarchical → easy invalidation). */
 export const queryKeys = {
@@ -16,5 +16,9 @@ export const queryKeys = {
     mine: () => [...queryKeys.invitations.all, 'mine'] as const,
     byList: (listId: ListId) => [...queryKeys.invitations.all, 'list', listId] as const,
     detail: (invitationId: InvitationId) => [...queryKeys.invitations.all, 'detail', invitationId] as const,
+  },
+  reminders: {
+    all: ['reminders'] as const,
+    mine: (userId: UserId) => [...queryKeys.reminders.all, userId] as const,
   },
 };

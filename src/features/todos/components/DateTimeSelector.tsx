@@ -1,23 +1,62 @@
 import { Button, Group, Stack, Switch, Text } from '@mantine/core';
-import { DatePicker, TimeGrid, TimePicker } from '@mantine/dates';
+import { DatePicker, TimeGrid } from '@mantine/dates';
+import { IconClock } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import { useState } from 'react';
-import { combineDateTime, TIME_PRESETS, type DueValue } from '@/lib/dates';
+import { formatTime, TIME_PRESETS } from '@/lib/dates';
 import { useSettingsStore } from '@/features/settings/settingsStore';
+import { ClockTimePicker } from '@/shared/ui';
+
+export interface DateTimeSelection {
+  /** `YYYY-MM-DD` */
+  date: string;
+  /** `HH:mm`, `null` for all-day. */
+  time: string | null;
+}
 
 export interface DateTimeSelectorProps {
-  value: DueValue;
-  onSubmit: (value: DueValue) => void;
+  initial: DateTimeSelection;
+  /** Lets the user switch the time off (all-day due dates). Reminders always need a time. */
+  timeOptional?: boolean;
+  /** Returns an error message to block saving. */
+  validate?: (selection: DateTimeSelection) => string | null;
+  onSubmit: (selection: DateTimeSelection) => void;
   onCancel: () => void;
 }
 
-/** Calendar + time chips + precise time input ("Pick a date & time" step). */
-export const DateTimeSelector = ({ value, onSubmit, onCancel }: DateTimeSelectorProps) => {
+/** "Pick a date & time" step: calendar + common times, "Other time…" opens the clock dial. */
+export const DateTimeSelector = ({ initial, timeOptional = false, validate, onSubmit, onCancel }: DateTimeSelectorProps) => {
   const timeFormat = useSettingsStore((state) => state.timeFormat);
-  const initial = value.dueAt ? dayjs(value.dueAt) : dayjs().add(1, 'day');
-  const [date, setDate] = useState<string>(initial.format('YYYY-MM-DD'));
-  const [withTime, setWithTime] = useState(value.dueHasTime || !value.dueAt);
-  const [time, setTime] = useState<string>(value.dueHasTime ? initial.format('HH:mm') : '09:00');
+  const [date, setDate] = useState(initial.date);
+  const [withTime, setWithTime] = useState(!timeOptional || initial.time !== null);
+  const [time, setTime] = useState(initial.time ?? '09:00');
+  const [step, setStep] = useState<'date' | 'clock'>('date');
+
+  const selection: DateTimeSelection = { date, time: withTime ? time : null };
+  const error = validate?.(selection) ?? null;
+  const isPreset = TIME_PRESETS.includes(time as (typeof TIME_PRESETS)[number]);
+  const timeLabel = formatTime(dayjs(`2000-01-01T${time}`), timeFormat);
+
+  if (step === 'clock') {
+    return (
+      <Stack gap="md">
+        <ClockTimePicker value={time} onChange={setTime} format={timeFormat} />
+        <Group justify="flex-end" gap="xs">
+          <Button variant="default" onClick={() => setStep('date')}>
+            Back
+          </Button>
+          <Button
+            onClick={() => {
+              setWithTime(true);
+              setStep('date');
+            }}
+          >
+            Set {timeLabel}
+          </Button>
+        </Group>
+      </Stack>
+    );
+  }
 
   return (
     <Stack gap="sm">
@@ -31,41 +70,42 @@ export const DateTimeSelector = ({ value, onSubmit, onCancel }: DateTimeSelector
         />
       </Group>
 
-      <Switch label="Set time" checked={withTime} onChange={(event) => setWithTime(event.currentTarget.checked)} />
+      {timeOptional && <Switch label="Set time" checked={withTime} onChange={(event) => setWithTime(event.currentTarget.checked)} />}
 
       {withTime && (
         <Stack gap="xs">
           <TimeGrid
             data={[...TIME_PRESETS]}
-            value={TIME_PRESETS.includes(time as (typeof TIME_PRESETS)[number]) ? time : null}
+            value={isPreset ? time : null}
             onChange={(next) => next && setTime(next.slice(0, 5))}
             format={timeFormat}
             simpleGridProps={{ cols: 3, spacing: 6 }}
             size="xs"
           />
-          <Group gap="xs" wrap="nowrap">
-            <Text size="sm" c="dimmed">
-              Custom
-            </Text>
-            <TimePicker
-              value={time}
-              onChange={(next) => next && setTime(next.slice(0, 5))}
-              format={timeFormat}
-              withDropdown
-              minutesStep={5}
-              size="sm"
-              style={{ flex: 1 }}
-              aria-label="Custom time"
-            />
-          </Group>
+          <Button
+            variant={isPreset ? 'default' : 'light'}
+            size="xs"
+            leftSection={<IconClock size={14} />}
+            onClick={() => setStep('clock')}
+          >
+            {isPreset ? 'Other time…' : `Time: ${timeLabel}`}
+          </Button>
         </Stack>
+      )}
+
+      {error && (
+        <Text size="xs" c="red">
+          {error}
+        </Text>
       )}
 
       <Group justify="flex-end" gap="xs" mt="xs">
         <Button variant="default" onClick={onCancel}>
           Back
         </Button>
-        <Button onClick={() => onSubmit(combineDateTime(date, withTime ? time : null))}>Save</Button>
+        <Button disabled={!!error} onClick={() => onSubmit(selection)}>
+          Save
+        </Button>
       </Group>
     </Stack>
   );

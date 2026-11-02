@@ -1,12 +1,13 @@
 import { Button, Chip, Divider, Drawer, Group, Input, Stack, Text, Textarea } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconCalendarDue, IconTrash, IconX } from '@tabler/icons-react';
+import { IconBell, IconCalendarDue, IconTrash, IconX } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import { useState } from 'react';
 import { PRIORITY_META, PRIORITY_ORDER } from '@/domain/priority';
-import type { Priority, Todo, UpdateTodoInput } from '@/domain/types';
+import type { ISODateString, Priority, Reminder, Todo, UpdateTodoInput } from '@/domain/types';
+import { ReminderPicker } from '@/features/reminders/components/ReminderPicker';
 import { useSettingsStore } from '@/features/settings/settingsStore';
-import { formatDue, NO_DUE } from '@/lib/dates';
+import { formatDue, formatReminder, NO_DUE } from '@/lib/dates';
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import { BottomSheet, CheckCircle } from '@/shared/ui';
 import { DueDatePicker } from './DueDatePicker';
@@ -18,13 +19,25 @@ export interface TodoDetailsSheetProps {
   onClose: () => void;
   onUpdate: (todo: Todo, input: UpdateTodoInput) => void;
   onDelete: (todo: Todo) => void;
+  /** The current user's personal reminder of the task. */
+  reminder: Reminder | undefined;
+  onReminderChange: (todo: Todo, remindAt: ISODateString | null) => void;
 }
 
-const TodoDetails = ({ todo, canWrite, onUpdate, onDelete }: Omit<TodoDetailsSheetProps, 'todo' | 'onClose'> & { todo: Todo }) => {
+const TodoDetails = ({
+  todo,
+  canWrite,
+  onUpdate,
+  onDelete,
+  reminder,
+  onReminderChange,
+}: Omit<TodoDetailsSheetProps, 'todo' | 'onClose'> & { todo: Todo }) => {
   const timeFormat = useSettingsStore((state) => state.timeFormat);
   const [title, setTitle] = useState(todo.title);
   const [notes, setNotes] = useState(todo.notes);
   const [dueOpened, dueHandlers] = useDisclosure(false);
+  const [reminderOpened, reminderHandlers] = useDisclosure(false);
+  const reminderPassed = !!reminder && (!!reminder.firedAt || dayjs(reminder.remindAt).isBefore(dayjs()));
 
   const update = (input: UpdateTodoInput) => canWrite && onUpdate(todo, input);
 
@@ -116,6 +129,34 @@ const TodoDetails = ({ todo, canWrite, onUpdate, onDelete }: Omit<TodoDetailsShe
           />
           {todo.dueAt && canWrite && (
             <Button variant="subtle" color="gray" px="xs" onClick={() => update(NO_DUE)} aria-label="Remove due date">
+              <IconX size={16} />
+            </Button>
+          )}
+        </Group>
+      </Input.Wrapper>
+
+      <Input.Wrapper label="Remind me" description="Personal – other members aren't notified">
+        <Group gap="xs" mt={6}>
+          <ReminderPicker
+            value={reminder?.remindAt ?? null}
+            due={todo}
+            onChange={(remindAt) => onReminderChange(todo, remindAt)}
+            opened={reminderOpened}
+            onClose={reminderHandlers.close}
+            target={
+              <Button
+                variant={reminder && !reminderPassed ? 'light' : 'default'}
+                color={reminderPassed ? 'gray' : undefined}
+                leftSection={<IconBell size={16} />}
+                onClick={reminderHandlers.toggle}
+                td={reminderPassed ? 'line-through' : undefined}
+              >
+                {reminder ? formatReminder(reminder.remindAt, timeFormat) : 'Add reminder'}
+              </Button>
+            }
+          />
+          {reminder && (
+            <Button variant="subtle" color="gray" px="xs" onClick={() => onReminderChange(todo, null)} aria-label="Remove reminder">
               <IconX size={16} />
             </Button>
           )}

@@ -1,35 +1,40 @@
-import { ActionIcon, Alert, Button, Collapse, EmptyState, Group, Menu, Stack, Text, UnstyledButton } from '@mantine/core';
+import { ActionIcon, Alert, Button, EmptyState, Group, Menu, Stack, Tooltip, UnstyledButton } from '@mantine/core';
 import { useDisclosure, useDocumentTitle } from '@mantine/hooks';
 import {
-  IconChevronRight,
+  IconCalendarMonth,
   IconDots,
   IconEye,
   IconEyeOff,
   IconLock,
+  IconListDetails,
   IconLogout,
   IconPencil,
-  IconSparkles,
   IconTrash,
   IconTrashX,
   IconUserPlus,
 } from '@tabler/icons-react';
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router';
+import dayjs from 'dayjs';
 import { useCallback, useMemo, useState } from 'react';
 import { canManage, canWrite as canWriteAccess, getListAccess } from '@/domain/permissions';
 import { queryTodos, TODO_FILTERS, type TodoFilter } from '@/domain/todoQuery';
 import { getErrorMessage } from '@/domain/errors';
-import type { Priority, Todo, TodoId, TodoList, UpdateTodoInput } from '@/domain/types';
+import { reminderIdOf, type CreateTodoInput, type ISODateString, type Priority, type Todo, type TodoId, type TodoList, type UpdateTodoInput } from '@/domain/types';
 import { useCurrentUser } from '@/features/auth/authStore';
 import { useDeleteList, useLeaveList, useListQuery, useUpdateList } from '@/features/lists/api';
 import { ListFormModal } from '@/features/lists/components/ListFormModal';
+import { ListIconView } from '@/features/lists/components/ListIconView';
 import { ShareSheet } from '@/features/lists/components/ShareSheet';
+import { useListReminders, useRemoveReminder, useSetReminder } from '@/features/reminders/api';
 import { useListViewPrefs, useSettingsStore } from '@/features/settings/settingsStore';
 import { haptic } from '@/lib/haptics';
 import { AvatarStack, confirm, PageHeader } from '@/shared/ui';
 import { useClearCompleted, useCreateTodo, useDeleteTodo, useTodosQuery, useUpdateTodo } from '../api';
 import { QuickAddBar } from '../components/QuickAddBar';
 import { TodoDetailsSheet } from '../components/TodoDetailsSheet';
+import { TodoCalendarView } from '../components/TodoCalendarView';
 import { TodoItem } from '../components/TodoItem';
+import { TodoListView } from '../components/TodoListView';
 import { TodoToolbar } from '../components/TodoToolbar';
 
 const route = getRouteApi('/_authed/lists/$listId');
@@ -76,7 +81,7 @@ const ListPageContent = ({ list }: { list: TodoList }) => {
   const setListPrefs = useSettingsStore((state) => state.setListPrefs);
   const confirmDelete = useSettingsStore((state) => state.confirmDelete);
   const [search, setSearch] = useState('');
-  const [completedOpen, completedHandlers] = useDisclosure(true);
+  const [calendarDay, setCalendarDay] = useState(() => dayjs().format('YYYY-MM-DD'));
   const [shareOpened, shareHandlers] = useDisclosure(false);
   const [editOpened, editHandlers] = useDisclosure(false);
 
@@ -87,6 +92,9 @@ const ListPageContent = ({ list }: { list: TodoList }) => {
   const updateList = useUpdateList(listId);
   const deleteList = useDeleteList();
   const leaveList = useLeaveList();
+  const reminders = useListReminders(listId);
+  const { setReminder } = useSetReminder();
+  const removeReminder = useRemoveReminder();
 
   const access = getListAccess(list, user.id);
   const writable = canWriteAccess(access);
@@ -129,12 +137,23 @@ const ListPageContent = ({ list }: { list: TodoList }) => {
 
   const handleUpdate = (todo: Todo, input: UpdateTodoInput) => updateTodo.mutate({ todoId: todo.id, input });
 
+  const handleAdd = (input: CreateTodoInput, remindAt: ISODateString | null) => {
+    const todoId = createTodo(input);
+    if (remindAt) setReminder({ listId, todoId, remindAt });
+  };
+
+  const handleReminderChange = (todo: Todo, remindAt: ISODateString | null) => {
+    if (remindAt) setReminder({ listId, todoId: todo.id, remindAt });
+    else removeReminder.mutate(reminderIdOf(listId, todo.id));
+  };
+
   const handleDelete = async (todo: Todo) => {
     if (confirmDelete && !(await confirm({ title: 'Delete task?', message: `“${todo.title}” will be permanently deleted.`, confirmLabel: 'Delete', danger: true }))) {
       return;
     }
     closeTask();
     deleteTodo.mutate(todo.id);
+    if (reminders.has(todo.id)) removeReminder.mutate(reminderIdOf(listId, todo.id));
   };
 
   const handleDeleteList = async () => {
@@ -158,6 +177,7 @@ const ListPageContent = ({ list }: { list: TodoList }) => {
       todo={todo}
       canWrite={writable}
       showAuthor={isShared}
+      reminder={reminders.get(todo.id)}
       onToggle={handleToggle}
       onOpen={openTask}
       onPriorityChange={handlePriority}
@@ -165,7 +185,11 @@ const ListPageContent = ({ list }: { list: TodoList }) => {
   );
 
   const openTodo = openTaskId ? todos.find((todo) => todo.id === (openTaskId as TodoId)) : undefined;
-  const isEmpty = sections.active.length === 0 && sections.completed.length === 0;
+  const isCalendar = prefs.view === 'calendar';
+  const calendarDue =
+    isCalendar && calendarDay >= dayjs().format('YYYY-MM-DD')
+      ? { dueAt: dayjs(calendarDay).startOf('day').toISOString(), dueHasTime: false }
+      : undefined;
   const memberCount = Object.keys(list.members).length + 1;
 
   return (
@@ -174,12 +198,23 @@ const ListPageContent = ({ list }: { list: TodoList }) => {
         onBack={() => void navigate({ to: '/' })}
         title={
           <>
-            <span aria-hidden>{list.emoji}</span> {list.title}
+            <ListIconView icon={list.icon} color={list.color} size={18} style={{ verticalAlign: '-2px' }} /> {list.title}
           </>
         }
         subtitle={isShared ? `${memberCount} people · ${isOwner ? 'Owner' : `Shared by ${list.owner.displayName}`}` : 'Private'}
         actions={
           <Group gap={4} wrap="nowrap">
+            <Tooltip label={isCalendar ? 'List view' : 'Calendar view'}>
+              <ActionIcon
+                size="lg"
+                color="gray"
+                variant="subtle"
+                onClick={() => setListPrefs(listId, { view: isCalendar ? 'list' : 'calendar' })}
+                aria-label={isCalendar ? 'Show as list' : 'Show calendar'}
+              >
+                {isCalendar ? <IconListDetails /> : <IconCalendarMonth />}
+              </ActionIcon>
+            </Tooltip>
             <UnstyledButton onClick={shareHandlers.open} aria-label="Members and sharing" p={4}>
               {isShared ? (
                 <AvatarStack users={[list.owner, ...Object.values(list.members)]} max={3} size="sm" />
@@ -237,67 +272,48 @@ const ListPageContent = ({ list }: { list: TodoList }) => {
             </Alert>
           )}
 
-          <TodoToolbar
-            search={search}
-            onSearchChange={setSearch}
-            filter={prefs.filter}
-            onFilterChange={(filter) => setListPrefs(listId, { filter })}
-            sort={prefs.sort}
-            onSortChange={(sort) => setListPrefs(listId, { sort })}
-            counts={counts}
-          />
-
-          {isEmpty ? (
-            <EmptyState
-              icon={<IconSparkles />}
-              variant="light"
-              title={todos.length === 0 ? 'Nothing here yet' : 'No matching tasks'}
-              description={
-                todos.length === 0
-                  ? writable
-                    ? 'Add your first task below.'
-                    : 'Tasks added by others will appear here.'
-                  : 'Try a different filter or search.'
-              }
-              py="xl"
+          {isCalendar ? (
+            <TodoCalendarView
+              todos={todos}
+              day={calendarDay}
+              onDayChange={setCalendarDay}
+              span={prefs.calendarSpan}
+              onSpanChange={(calendarSpan) => setListPrefs(listId, { calendarSpan })}
+              showCompleted={prefs.showCompleted}
+              canWrite={writable}
+              renderItem={renderItem}
+              onShowUnscheduled={() => setListPrefs(listId, { view: 'list', filter: 'all' })}
             />
           ) : (
             <>
-              <Stack gap={6}>{sections.active.map(renderItem)}</Stack>
-
-              {sections.active.length === 0 && sections.completed.length > 0 && (
-                <Text ta="center" c="dimmed" size="sm" py="md">
-                  🎉 All done!
-                </Text>
-              )}
-
-              {prefs.showCompleted && sections.completed.length > 0 && (
-                <Stack gap={6}>
-                  <UnstyledButton onClick={completedHandlers.toggle} py={6} px={4} aria-expanded={completedOpen}>
-                    <Group gap={6}>
-                      <IconChevronRight
-                        size={16}
-                        style={{ transform: completedOpen ? 'rotate(90deg)' : undefined, transition: 'transform 150ms ease' }}
-                      />
-                      <Text size="sm" fw={600}>
-                        Completed
-                      </Text>
-                      <Text size="sm" c="dimmed">
-                        {sections.completed.length}
-                      </Text>
-                    </Group>
-                  </UnstyledButton>
-                  <Collapse expanded={completedOpen}>
-                    <Stack gap={6}>{sections.completed.map(renderItem)}</Stack>
-                  </Collapse>
-                </Stack>
-              )}
+              <TodoToolbar
+                search={search}
+                onSearchChange={setSearch}
+                filter={prefs.filter}
+                onFilterChange={(filter) => setListPrefs(listId, { filter })}
+                sort={prefs.sort}
+                onSortChange={(sort) => setListPrefs(listId, { sort })}
+                counts={counts}
+              />
+              <TodoListView
+                sections={sections}
+                totalCount={todos.length}
+                showCompleted={prefs.showCompleted}
+                canWrite={writable}
+                renderItem={renderItem}
+              />
             </>
           )}
         </Stack>
       </div>
 
-      {writable && <QuickAddBar onAdd={createTodo} />}
+      {writable && (
+        <QuickAddBar
+          onAdd={handleAdd}
+          defaultDue={calendarDue}
+          placeholder={calendarDue ? `Add a task for ${dayjs(calendarDay).format('ddd, D MMM')}` : undefined}
+        />
+      )}
 
       <TodoDetailsSheet
         todo={openTodo}
@@ -305,6 +321,8 @@ const ListPageContent = ({ list }: { list: TodoList }) => {
         onClose={closeTask}
         onUpdate={handleUpdate}
         onDelete={(todo) => void handleDelete(todo)}
+        reminder={openTodo ? reminders.get(openTodo.id) : undefined}
+        onReminderChange={handleReminderChange}
       />
       <ShareSheet list={list} opened={shareOpened} onClose={shareHandlers.close} />
       {isOwner && (

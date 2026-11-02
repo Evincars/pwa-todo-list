@@ -8,11 +8,12 @@ import {
   IconSun,
   IconSunset2,
 } from '@tabler/icons-react';
+import dayjs from 'dayjs';
 import { useState, type ReactElement, type ReactNode } from 'react';
 import { useSettingsStore } from '@/features/settings/settingsStore';
-import { formatQuickHint, getQuickDueOptions, NO_DUE, type DueValue, type QuickDueKey } from '@/lib/dates';
+import { combineDateTime, formatQuickHint, getQuickDueOptions, NO_DUE, type DueValue, type QuickDueKey } from '@/lib/dates';
 import { OptionList, ResponsiveOverlay, type OptionItem } from '@/shared/ui';
-import { DateTimeSelector } from './DateTimeSelector';
+import { DateTimeSelector, type DateTimeSelection } from './DateTimeSelector';
 
 const QUICK_ICONS: Record<QuickDueKey, ReactNode> = {
   laterToday: <IconClockHour4 size={18} />,
@@ -20,6 +21,11 @@ const QUICK_ICONS: Record<QuickDueKey, ReactNode> = {
   tomorrow: <IconSunset2 size={18} />,
   weekend: <IconCalendarWeek size={18} />,
   nextWeek: <IconCalendarEvent size={18} />,
+};
+
+const toSelection = ({ dueAt, dueHasTime }: DueValue): DateTimeSelection => {
+  const date = dueAt ? dayjs(dueAt) : dayjs().add(1, 'day');
+  return { date: date.format('YYYY-MM-DD'), time: dueAt && !dueHasTime ? null : dueAt ? date.format('HH:mm') : '09:00' };
 };
 
 type PickerAction = { type: 'quick'; value: DueValue } | { type: 'custom' } | { type: 'clear' };
@@ -86,7 +92,12 @@ export const DueDatePicker = ({ value, onChange, opened, onClose, target }: DueD
           <OptionList options={moreOptions} onSelect={handleSelect} />
         </>
       ) : (
-        <DateTimeSelector value={value} onSubmit={commit} onCancel={() => setView('quick')} />
+        <DateTimeSelector
+          initial={toSelection(value)}
+          timeOptional
+          onSubmit={({ date, time }) => commit(combineDateTime(date, time))}
+          onCancel={() => setView('quick')}
+        />
       )}
     </ResponsiveOverlay>
   );

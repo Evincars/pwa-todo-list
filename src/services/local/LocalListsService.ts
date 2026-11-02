@@ -45,7 +45,7 @@ export class LocalListsService implements ListsService {
     const list: TodoList = {
       id: nanoid(12) as ListId,
       title,
-      emoji: input.emoji,
+      icon: input.icon,
       color: input.color,
       owner: toUserSummary(user),
       members: {},

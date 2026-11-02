@@ -104,3 +104,38 @@ export const queryTodos = (todos: readonly Todo[], { filter, sort, search }: Tod
       .sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? '')),
   };
 };
+
+/** Local calendar day key, `YYYY-MM-DD`. */
+export const dayKey = (iso: string) => dayjs(iso).format('YYYY-MM-DD');
+
+export interface CalendarDay {
+  active: Todo[];
+  completed: Todo[];
+}
+
+/** Planned todos grouped per local day; inside a day all-day tasks first, then by time and priority. */
+export const groupTodosByDay = (todos: readonly Todo[]): Map<string, CalendarDay> => {
+  const days = new Map<string, CalendarDay>();
+  const agendaOrder = chain<Todo>(
+    (a, b) => Number(a.dueHasTime) - Number(b.dueHasTime),
+    (a, b) => (a.dueHasTime && b.dueHasTime ? a.dueAt!.localeCompare(b.dueAt!) : 0),
+    byPriority,
+    byTitle,
+  );
+  for (const todo of todos) {
+    if (!todo.dueAt) continue;
+    const key = dayKey(todo.dueAt);
+    const day = days.get(key) ?? { active: [], completed: [] };
+    (todo.completed ? day.completed : day.active).push(todo);
+    days.set(key, day);
+  }
+  for (const day of days.values()) {
+    day.active.sort(agendaOrder);
+    day.completed.sort(agendaOrder);
+  }
+  return days;
+};
+
+/** Most important priority among `todos` (`none` when empty). */
+export const topPriority = (todos: readonly Todo[]) =>
+  todos.reduce<Todo['priority']>((top, todo) => (PRIORITY_META[todo.priority].weight > PRIORITY_META[top].weight ? todo.priority : top), 'none');

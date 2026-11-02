@@ -87,6 +87,10 @@ export const formatDue = ({ dueAt, dueHasTime }: DueValue, format: TimeFormat, n
   return dueHasTime ? `${dayLabel}, ${formatTime(date, format)}` : dayLabel;
 };
 
+/** Reminder label, e.g. "Today, 12:00", "Mon, 9 Nov, 19:00". */
+export const formatReminder = (remindAt: ISODateString, format: TimeFormat, now: Dayjs = dayjs()): string =>
+  formatDue({ dueAt: remindAt, dueHasTime: true }, format, now);
+
 /** Short hint for quick pick rows: "18:00", "Tue 9:00", "Mon 9:00". */
 export const formatQuickHint = (option: QuickDueOption, format: TimeFormat, now: Dayjs = dayjs()): string => {
   const { date, value } = option;

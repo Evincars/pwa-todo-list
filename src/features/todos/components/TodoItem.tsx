@@ -1,8 +1,10 @@
 import { Group, Text } from '@mantine/core';
-import { IconNote } from '@tabler/icons-react';
+import { IconBell, IconNote } from '@tabler/icons-react';
 import { memo, type CSSProperties } from 'react';
 import { isHighlighted, PRIORITY_META } from '@/domain/priority';
-import type { Priority, Todo } from '@/domain/types';
+import type { Priority, Reminder, Todo } from '@/domain/types';
+import { useSettingsStore } from '@/features/settings/settingsStore';
+import { formatReminder } from '@/lib/dates';
 import { CheckCircle, UserAvatar } from '@/shared/ui';
 import { DueBadge } from './DueBadge';
 import { PriorityMenu } from './PriorityMenu';
@@ -14,12 +16,15 @@ export interface TodoItemProps {
   /** Show who created the task (shared lists). */
   showAuthor: boolean;
   pending?: boolean;
+  /** Personal reminder, shown while it hasn't fired. */
+  reminder?: Reminder;
   onToggle: (todo: Todo, completed: boolean) => void;
   onOpen: (todo: Todo) => void;
   onPriorityChange: (todo: Todo, priority: Priority) => void;
 }
 
-export const TodoItem = memo(({ todo, canWrite, showAuthor, pending, onToggle, onOpen, onPriorityChange }: TodoItemProps) => {
+export const TodoItem = memo(({ todo, canWrite, showAuthor, pending, reminder, onToggle, onOpen, onPriorityChange }: TodoItemProps) => {
+  const timeFormat = useSettingsStore((state) => state.timeFormat);
   const meta = PRIORITY_META[todo.priority];
   const highlight = !todo.completed && isHighlighted(todo.priority);
 
@@ -50,6 +55,12 @@ export const TodoItem = memo(({ todo, canWrite, showAuthor, pending, onToggle, o
         </Text>
         <div className={classes.meta}>
           {todo.dueAt && <DueBadge todo={todo} />}
+          {reminder && !reminder.firedAt && !todo.completed && (
+            <Group gap={2} wrap="nowrap" aria-label="Reminder">
+              <IconBell size={12} />
+              <span>{formatReminder(reminder.remindAt, timeFormat)}</span>
+            </Group>
+          )}
           {todo.notes && <IconNote size={14} aria-label="Has notes" />}
           {showAuthor && (
             <Group gap={4} wrap="nowrap">

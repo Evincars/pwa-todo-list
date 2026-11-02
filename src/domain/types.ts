@@ -10,6 +10,7 @@ export type UserId = Brand<string, 'UserId'>;
 export type ListId = Brand<string, 'ListId'>;
 export type TodoId = Brand<string, 'TodoId'>;
 export type InvitationId = Brand<string, 'InvitationId'>;
+export type ReminderId = Brand<string, 'ReminderId'>;
 
 /** ISO-8601 timestamp string, e.g. `2026-11-02T18:00:00.000Z`. */
 export type ISODateString = string;
@@ -49,10 +50,16 @@ export interface UserSummary {
   photoURL: string | null;
 }
 
+/**
+ * List icon token: either an emoji (`"🛒"`) or a vector glyph reference (`"glyph:radioactive"`).
+ * The glyph registry lives in the UI layer, so the stored value stays a plain string.
+ */
+export type ListIcon = string;
+
 export interface TodoList {
   id: ListId;
   title: string;
-  emoji: string;
+  icon: ListIcon;
   color: ListColor;
   owner: UserSummary;
   /** Members other than the owner, keyed by user id. */
@@ -97,7 +104,8 @@ export interface Invitation {
   listId: ListId;
   /** Denormalized so invitees can see what they're joining before they have access. */
   listTitle: string;
-  listEmoji: string;
+  listIcon: ListIcon;
+  listColor: ListColor;
   /** Target email for `email` invitations (lower-cased), `null` for shareable links. */
   email: string | null;
   permission: MemberPermission;
@@ -111,9 +119,28 @@ export interface Invitation {
 
 // ---------- Inputs ----------
 
+/**
+ * Personal reminder of a task. Stored per user (`users/{uid}/reminders/{id}`), so members of a
+ * shared list – including read-only ones – get their own reminders without touching the task.
+ */
+export interface Reminder {
+  /** `${listId}_${todoId}` – at most one reminder per user and task. */
+  id: ReminderId;
+  userId: UserId;
+  listId: ListId;
+  todoId: TodoId;
+  remindAt: ISODateString;
+  /** Set once the notification was delivered (or skipped because the task was done). */
+  firedAt: ISODateString | null;
+  createdAt: ISODateString;
+  updatedAt: ISODateString;
+}
+
+export const reminderIdOf = (listId: ListId, todoId: TodoId) => `${listId}_${todoId}` as ReminderId;
+
 export interface CreateListInput {
   title: string;
-  emoji: string;
+  icon: ListIcon;
   color: ListColor;
 }
 

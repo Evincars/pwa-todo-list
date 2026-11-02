@@ -48,6 +48,6 @@ export const SettingsRow = ({ label, description, control }: SettingsRowProps) =
         </Text>
       )}
     </div>
-    {control}
+    <div style={{ flexShrink: 0 }}>{control}</div>
   </Group>
 );

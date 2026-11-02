@@ -27,7 +27,7 @@ describe('list sharing & permissions', () => {
 
   it('invited members get read access by default and the host can grant write', async () => {
     await signInAs(services, HOST);
-    const list = await services.lists.createList({ title: 'Groceries', emoji: '🛒', color: 'teal' });
+    const list = await services.lists.createList({ title: 'Groceries', icon: '🛒', color: 'teal' });
     await services.todos.createTodo(list.id, { title: 'Milk', priority: 'high' });
     const invitation = await services.invitations.createInvitation(list.id, { kind: 'email', email: GUEST.email });
     expect(invitation.permission).toBe('read');
@@ -55,7 +55,7 @@ describe('list sharing & permissions', () => {
 
   it('e-mail invitations are bound to the address, links can be reused until revoked', async () => {
     await signInAs(services, HOST);
-    const list = await services.lists.createList({ title: 'Trip', emoji: '✈️', color: 'blue' });
+    const list = await services.lists.createList({ title: 'Trip', icon: '✈️', color: 'blue' });
     const emailInvite = await services.invitations.createInvitation(list.id, { kind: 'email', email: GUEST.email });
     const link = await services.invitations.createInvitation(list.id, { kind: 'link', permission: 'write' });
 
@@ -75,7 +75,7 @@ describe('list sharing & permissions', () => {
 
   it('removed members lose access; deleting a list removes its todos', async () => {
     const host = await signInAs(services, HOST);
-    const list = await services.lists.createList({ title: 'Chores', emoji: '🧹', color: 'orange' });
+    const list = await services.lists.createList({ title: 'Chores', icon: '🧹', color: 'orange' });
     const invite = await services.invitations.createInvitation(list.id, { kind: 'link' });
 
     const guest = await signInAs(services, GUEST);
@@ -98,12 +98,32 @@ describe('list sharing & permissions', () => {
 
   it('notifies watchers on changes (real-time emulation)', async () => {
     await signInAs(services, HOST);
-    const list = await services.lists.createList({ title: 'Live', emoji: '📝', color: 'blue' });
+    const list = await services.lists.createList({ title: 'Live', icon: '📝', color: 'blue' });
     let calls = 0;
     const unsubscribe = services.todos.watchTodos(list.id, () => calls++);
     await services.todos.createTodo(list.id, { title: 'Ping' });
     unsubscribe();
     await services.todos.createTodo(list.id, { title: 'Pong' });
     expect(calls).toBe(1);
+  });
+
+  it('reminders are personal – read-only members can set their own, others never see them', async () => {
+    await signInAs(services, HOST);
+    const list = await services.lists.createList({ title: 'Gig', icon: 'glyph:electric-guitar', color: 'red' });
+    const todo = await services.todos.createTodo(list.id, { title: 'Soundcheck' });
+    const invitation = await services.invitations.createInvitation(list.id, { kind: 'email', email: GUEST.email });
+    await services.reminders.setReminder(list.id, todo.id, '2030-01-01T12:00:00.000Z');
+
+    await signInAs(services, GUEST);
+    expect(await services.reminders.getMyReminders()).toEqual([]);
+    await expectCode(services.reminders.setReminder(list.id, todo.id, '2030-01-01T09:00:00.000Z'), 'permission-denied');
+    await services.invitations.acceptInvitation(invitation.id);
+    const guestReminder = await services.reminders.setReminder(list.id, todo.id, '2030-01-01T09:00:00.000Z');
+    await services.reminders.markFired(guestReminder.id);
+    expect((await services.reminders.getReminder(guestReminder.id))?.firedAt).not.toBeNull();
+
+    await signInAs(services, HOST);
+    const [hostReminder] = await services.reminders.getMyReminders();
+    expect(hostReminder).toMatchObject({ todoId: todo.id, remindAt: '2030-01-01T12:00:00.000Z', firedAt: null });
   });
 });

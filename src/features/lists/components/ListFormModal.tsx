@@ -3,7 +3,9 @@ import { useForm } from '@mantine/form';
 import { useEffect } from 'react';
 import { LIST_COLORS, type CreateListInput, type TodoList } from '@/domain/types';
 import { ResponsiveModal, SwatchPicker } from '@/shared/ui';
-import { EmojiPicker } from './EmojiPicker';
+import { DEFAULT_LIST_ICON } from '../listIcons';
+import { ListIconPicker } from './ListIconPicker';
+import { ListIconView } from './ListIconView';
 
 export interface ListFormModalProps {
   opened: boolean;
@@ -14,7 +16,7 @@ export interface ListFormModalProps {
   onSubmit: (values: CreateListInput) => void;
 }
 
-const DEFAULT_VALUES: CreateListInput = { title: '', emoji: '📝', color: 'blue' };
+const DEFAULT_VALUES: CreateListInput = { title: '', icon: DEFAULT_LIST_ICON, color: 'blue' };
 
 export const ListFormModal = ({ opened, onClose, list, loading, onSubmit }: ListFormModalProps) => {
   const form = useForm<CreateListInput>({
@@ -24,7 +26,7 @@ export const ListFormModal = ({ opened, onClose, list, loading, onSubmit }: List
 
   // Re-initialize every time the modal opens.
   useEffect(() => {
-    if (opened) form.setValues(list ? { title: list.title, emoji: list.emoji, color: list.color } : DEFAULT_VALUES);
+    if (opened) form.setValues(list ? { title: list.title, icon: list.icon, color: list.color } : DEFAULT_VALUES);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opened, list]);
 
@@ -37,11 +39,11 @@ export const ListFormModal = ({ opened, onClose, list, loading, onSubmit }: List
             placeholder="e.g. Groceries"
             data-autofocus
             maxLength={60}
-            leftSection={<span style={{ fontSize: 18 }}>{form.values.emoji}</span>}
+            leftSection={<ListIconView icon={form.values.icon} color={form.values.color} size={18} />}
             {...form.getInputProps('title')}
           />
           <Input.Wrapper label="Icon">
-            <EmojiPicker value={form.values.emoji} onChange={(emoji) => form.setFieldValue('emoji', emoji)} />
+            <ListIconPicker value={form.values.icon} color={form.values.color} onChange={(icon) => form.setFieldValue('icon', icon)} />
           </Input.Wrapper>
           <Input.Wrapper label="Color">
             <SwatchPicker

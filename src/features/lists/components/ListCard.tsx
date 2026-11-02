@@ -8,6 +8,7 @@ import type { TodoList, UserId } from '@/domain/types';
 import { useTodosQuery } from '@/features/todos/api';
 import { AvatarStack } from '@/shared/ui';
 import classes from './ListCard.module.css';
+import { ListIconView } from './ListIconView';
 
 export interface ListCardProps {
   list: TodoList;
@@ -32,7 +33,9 @@ export const ListCard = ({ list, currentUserId }: ListCardProps) => {
       style={{ '--list-color': `var(--mantine-color-${list.color}-filled)` } as CSSProperties}
     >
       <Group wrap="nowrap" align="flex-start">
-        <div className={classes.emoji}>{list.emoji}</div>
+        <div className={classes.icon}>
+          <ListIconView icon={list.icon} color={list.color} size={22} />
+        </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <Group justify="space-between" wrap="nowrap" gap="xs">
             <Text fw={600} lineClamp={1}>

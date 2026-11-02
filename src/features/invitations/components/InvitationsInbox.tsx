@@ -2,6 +2,7 @@ import { Button, Card, Group, Stack, Text, Title } from '@mantine/core';
 import { IconMail } from '@tabler/icons-react';
 import { useNavigate } from '@tanstack/react-router';
 import type { Invitation } from '@/domain/types';
+import { ListIconView } from '@/features/lists/components/ListIconView';
 import { useAcceptInvitation, useDeclineInvitation, useMyInvitationsQuery } from '../api';
 
 const PERMISSION_TEXT = { read: 'view', write: 'edit' } as const;
@@ -15,7 +16,7 @@ const InvitationCard = ({ invitation }: { invitation: Invitation }) => {
     <Card withBorder radius="lg" padding="md" bg="var(--mantine-primary-color-light)">
       <Group wrap="nowrap" align="flex-start">
         <Text fz={28} lh={1}>
-          {invitation.listEmoji}
+          <ListIconView icon={invitation.listIcon} color={invitation.listColor} size={28} />
         </Text>
         <div style={{ flex: 1, minWidth: 0 }}>
           <Text fw={600} lineClamp={1}>

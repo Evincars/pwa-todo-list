@@ -37,6 +37,8 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         navigateFallback: 'index.html',
+        // Adds the `notificationclick` handler used by task reminders.
+        importScripts: ['sw-notifications.js'],
       },
       devOptions: { enabled: false },
     }),

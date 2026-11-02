@@ -5,8 +5,11 @@ import type {
   CreateTodoInput,
   Invitation,
   InvitationId,
+  ISODateString,
   ListId,
   MemberPermission,
+  Reminder,
+  ReminderId,
   Todo,
   TodoId,
   TodoList,
@@ -76,11 +79,23 @@ export interface InvitationsService {
   watchInvitations(onChange: () => void): Unsubscribe;
 }
 
+/** Personal reminders of the signed-in user (other members never see them). */
+export interface RemindersService {
+  getMyReminders(): Promise<Reminder[]>;
+  getReminder(reminderId: ReminderId): Promise<Reminder | null>;
+  /** Creates or replaces the reminder of a task; requires read access to the list. */
+  setReminder(listId: ListId, todoId: TodoId, remindAt: ISODateString): Promise<Reminder>;
+  removeReminder(reminderId: ReminderId): Promise<void>;
+  markFired(reminderId: ReminderId): Promise<void>;
+  watchMyReminders(onChange: () => void): Unsubscribe;
+}
+
 export interface Services {
   auth: AuthService;
   lists: ListsService;
   todos: TodosService;
   invitations: InvitationsService;
+  reminders: RemindersService;
   /** Wipes all locally stored data (dev/demo helper). */
   resetData(): Promise<void>;
 }

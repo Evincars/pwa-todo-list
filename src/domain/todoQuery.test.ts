@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import { describe, expect, it } from 'vitest';
-import { isOverdue, queryTodos, sortTodos } from './todoQuery';
+import { groupTodosByDay, isOverdue, queryTodos, sortTodos, topPriority } from './todoQuery';
 import type { Priority, Todo, TodoId, UserId } from './types';
 
 let seq = 0;
@@ -83,5 +83,23 @@ describe('queryTodos', () => {
     const important = queryTodos(items, { filter: 'important', sort: 'smart', search: '' });
     expect(important.active.map((t) => t.title)).toEqual(['Call mom']);
     expect(queryTodos(items, { filter: 'all', sort: 'smart', search: '' }).completed).toHaveLength(1);
+  });
+});
+
+describe('groupTodosByDay', () => {
+  it('groups planned todos per local day, all-day first, then by time', () => {
+    const evening = todo({ title: 'evening', dueAt: dayjs('2026-11-03T20:00').toISOString(), dueHasTime: true });
+    const morning = todo({ title: 'morning', dueAt: dayjs('2026-11-03T08:00').toISOString(), dueHasTime: true });
+    const allDay = todo({ title: 'all day', dueAt: dayjs('2026-11-03').startOf('day').toISOString() });
+    const done = todo({ title: 'done', dueAt: dayjs('2026-11-03T09:00').toISOString(), dueHasTime: true, completed: true });
+    const other = todo({ title: 'other', dueAt: dayjs('2026-11-04T09:00').toISOString(), dueHasTime: true, priority: 'high' });
+    const unplanned = todo({ title: 'unplanned' });
+
+    const days = groupTodosByDay([evening, morning, allDay, done, other, unplanned]);
+    expect([...days.keys()].sort()).toEqual(['2026-11-03', '2026-11-04']);
+    expect(days.get('2026-11-03')?.active.map((t) => t.title)).toEqual(['all day', 'morning', 'evening']);
+    expect(days.get('2026-11-03')?.completed.map((t) => t.title)).toEqual(['done']);
+    expect(topPriority(days.get('2026-11-04')!.active)).toBe('high');
+    expect(topPriority([])).toBe('none');
   });
 });

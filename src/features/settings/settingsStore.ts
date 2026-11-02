@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Priority } from '@/domain/types';
 import type { TodoFilter, TodoSortKey } from '@/domain/todoQuery';
+import type { CalendarSpan } from '@/shared/ui/AgendaCalendar';
 import type { RadiusOption } from '@/theme/createAppTheme';
 import type { ThemeId } from '@/theme/presets';
 
@@ -9,10 +10,14 @@ export type ColorSchemePreference = 'light' | 'dark' | 'system';
 export type TimeFormat = '12h' | '24h';
 export type WeekStart = 0 | 1;
 
+export type ListViewMode = 'list' | 'calendar';
+
 export interface ListViewPrefs {
   sort: TodoSortKey;
   filter: TodoFilter;
   showCompleted: boolean;
+  view: ListViewMode;
+  calendarSpan: CalendarSpan;
 }
 
 export interface Settings {
@@ -28,6 +33,8 @@ export interface Settings {
   showCompleted: boolean;
   confirmDelete: boolean;
   haptics: boolean;
+  /** Fill in the suggested reminder for new tasks that have a due date. */
+  autoReminder: boolean;
 }
 
 interface SettingsState extends Settings {
@@ -50,6 +57,7 @@ export const DEFAULT_SETTINGS: Settings = {
   showCompleted: true,
   confirmDelete: true,
   haptics: true,
+  autoReminder: false,
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -79,5 +87,7 @@ export const useListViewPrefs = (listId: string): ListViewPrefs => {
     sort: prefs?.sort ?? defaultSort,
     filter: prefs?.filter ?? 'all',
     showCompleted: prefs?.showCompleted ?? showCompleted,
+    view: prefs?.view ?? 'list',
+    calendarSpan: prefs?.calendarSpan ?? 'week',
   };
 };
