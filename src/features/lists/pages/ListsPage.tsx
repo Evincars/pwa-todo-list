@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import type { TodoList } from '@/domain/types';
 import { useCurrentUser } from '@/features/auth/authStore';
 import { InvitationsInbox } from '@/features/invitations/components/InvitationsInbox';
+import { NotificationPrompt } from '@/features/reminders/components/NotificationPrompt';
 import { useTranslation } from '@/i18n';
 import { PageHeader, QueryView, UserAvatar } from '@/shared/ui';
 import { useCreateList, useMyListsQuery } from '../api';
@@ -56,6 +57,7 @@ export const ListsPage = () => {
       <div className="app-container">
         <Stack gap="lg">
           <InvitationsInbox />
+          <NotificationPrompt />
           <QueryView
             query={listsQuery}
             loading={

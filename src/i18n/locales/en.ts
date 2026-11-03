@@ -389,6 +389,13 @@ export const en = {
     quick: { laterToday: 'Later today', tomorrow: 'Tomorrow', nextWeek: 'Next week' },
     saved: 'Reminder saved',
     due: 'Due {{date}}',
+    prompt: {
+      title: 'Get reminders as notifications',
+      description: 'Allow notifications so task reminders reach you even when the app is in the background.',
+      iosInstall: 'On iPhone and iPad, notifications only work after adding the app to the Home Screen: Share → Add to Home Screen, then open it from there.',
+      enable: 'Enable',
+      notNow: 'Not now',
+    },
     permission: {
       iosInstall: 'On iPhone and iPad, add the app to your Home Screen (Share → Add to Home Screen) to get system notifications.',
       denied: 'Notifications are blocked for this site. Reminders will only show while the app is open – allow them in browser settings.',

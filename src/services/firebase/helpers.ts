@@ -61,15 +61,17 @@ export const guard = async <T>(operation: () => Promise<T>): Promise<T> => {
 };
 
 /**
- * Real-time listener feeding `useLiveInvalidation`: calls `onChange` for remote changes only
- * (the initial snapshot is what the query just fetched). Errors – e.g. access revoked – also
- * trigger a refetch, which then surfaces the error.
+ * Real-time listener feeding `useLiveInvalidation`: calls `onChange` for every change. Only an
+ * initial snapshot served from the local cache is skipped (the query just fetched fresher data) –
+ * an initial server snapshot may already contain changes made after that fetch. Errors – e.g.
+ * access revoked – also trigger a refetch, which then surfaces the error.
  */
 export const watch = (target: Query | DocumentReference, onChange: () => void): Unsubscribe => {
   let initial = true;
-  const next = () => {
-    if (initial) initial = false;
-    else onChange();
+  const next = (snapshot: { metadata: { fromCache: boolean } }) => {
+    const skip = initial && snapshot.metadata.fromCache;
+    initial = false;
+    if (!skip) onChange();
   };
   return target instanceof DocumentReference
     ? onSnapshot(target, next, () => onChange())

@@ -43,6 +43,8 @@ export interface Settings {
 interface SettingsState extends Settings {
   /** Per-list view preferences (device local, not synced). */
   listPrefs: Record<string, Partial<ListViewPrefs>>;
+  /** The "enable notifications" card on the lists page was closed. */
+  notificationPromptDismissed: boolean;
   setSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
   setListPrefs: (listId: string, prefs: Partial<ListViewPrefs>) => void;
   resetSettings: () => void;
@@ -69,6 +71,7 @@ export const useSettingsStore = create<SettingsState>()(
     (set) => ({
       ...DEFAULT_SETTINGS,
       listPrefs: {},
+      notificationPromptDismissed: false,
       setSetting: (key, value) => set({ [key]: value }),
       setListPrefs: (listId, prefs) =>
         set((state) => ({ listPrefs: { ...state.listPrefs, [listId]: { ...state.listPrefs[listId], ...prefs } } })),

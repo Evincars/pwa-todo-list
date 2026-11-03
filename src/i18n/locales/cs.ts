@@ -390,6 +390,13 @@ export const cs = {
     quick: { laterToday: 'Později dnes', tomorrow: 'Zítra', nextWeek: 'Příští týden' },
     saved: 'Připomínka uložena',
     due: 'Termín {{date}}',
+    prompt: {
+      title: 'Připomínky jako upozornění',
+      description: 'Povolte upozornění, aby vám připomínky úkolů chodily, i když je aplikace na pozadí.',
+      iosInstall: 'Na iPhonu a iPadu fungují upozornění jen po přidání aplikace na plochu: Sdílet → Přidat na plochu a pak ji otevřete odtamtud.',
+      enable: 'Povolit',
+      notNow: 'Teď ne',
+    },
     permission: {
       iosInstall: 'Na iPhonu a iPadu přidejte aplikaci na plochu (Sdílet → Přidat na plochu), aby chodila systémová upozornění.',
       denied: 'Upozornění jsou pro tento web zablokovaná. Připomínky se zobrazí jen v otevřené aplikaci – povolte je v nastavení prohlížeče.',
