@@ -1,9 +1,15 @@
 import { Button, type ButtonProps } from '@mantine/core';
 import type { AuthProviderId } from '@/domain/types';
 import { useTranslation } from '@/i18n';
-import { AppleLogo, GoogleLogo } from './ProviderLogos';
+import { ProviderLogo } from './ProviderLogos';
 
-export const PROVIDER_LABEL: Record<AuthProviderId, string> = { google: 'Google', apple: 'Apple' };
+export const PROVIDER_LABEL: Record<AuthProviderId, string> = { google: 'Google', facebook: 'Facebook', apple: 'Apple' };
+
+/** Brand colors per the providers' button guidelines (Google: neutral, Facebook: #1877F2, Apple: black). */
+const BRAND_STYLES: Partial<Record<AuthProviderId, { backgroundColor: string; color: string }>> = {
+  facebook: { backgroundColor: '#1877F2', color: '#fff' },
+  apple: { backgroundColor: '#000', color: '#fff' },
+};
 
 export interface ProviderButtonProps extends Omit<ButtonProps, 'children'> {
   provider: AuthProviderId;
@@ -13,16 +19,15 @@ export interface ProviderButtonProps extends Omit<ButtonProps, 'children'> {
 /** Brand-compliant "Continue with …" buttons. */
 export const ProviderButton = ({ provider, ...props }: ProviderButtonProps) => {
   const { t } = useTranslation();
-  const isApple = provider === 'apple';
+  const brand = BRAND_STYLES[provider];
   return (
     <Button
       size="lg"
       radius="xl"
       fullWidth
-      variant={isApple ? 'filled' : 'default'}
-      color={isApple ? 'dark' : undefined}
-      leftSection={isApple ? <AppleLogo /> : <GoogleLogo />}
-      styles={isApple ? { root: { backgroundColor: '#000', color: '#fff' } } : undefined}
+      variant={brand ? 'filled' : 'default'}
+      leftSection={<ProviderLogo provider={provider} />}
+      styles={brand ? { root: brand } : undefined}
       {...props}
     >
       {t('auth.continueWith', { provider: PROVIDER_LABEL[provider] })}

@@ -22,7 +22,7 @@ export default defineConfig({
         name: 'Shared Todo',
         short_name: 'Todo',
         description: 'Shared todo lists with real-time collaboration.',
-        theme_color: '#4c6ef5',
+        theme_color: '#f76707',
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',

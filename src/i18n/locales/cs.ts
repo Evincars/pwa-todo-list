@@ -80,7 +80,7 @@ export const cs = {
     emailPlaceholder: 'jana@example.com',
     emailInvalid: 'Zadejte platný e-mail',
     photo: 'URL profilové fotky (nepovinné)',
-    photoHint: 'Google sdílí vaši profilovou fotku. Apple ji nesdílí nikdy, proto se použijí vaše iniciály.',
+    photoHint: 'Google a Facebook sdílejí vaši profilovou fotku. Apple ji nesdílí nikdy, proto se použijí vaše iniciály.',
     signOut: 'Odhlásit se',
   },
   access: {
@@ -549,6 +549,7 @@ export const cs = {
     unauthorizedDomain: 'Přihlášení z této domény zatím není povolené – přidejte ji mezi autorizované domény ve Firebase.',
     providerDisabled: 'Tento způsob přihlášení není povolený.',
     popupBlocked: 'Přihlašovací okno bylo zablokováno. Povolte pro tento web vyskakovací okna a zkuste to znovu.',
+    accountExistsWithOtherProvider: 'Pro tento e-mail už existuje účet s jiným způsobem přihlášení. Použijte ten (např. Google).',
     offline: 'Jste offline. Zkontrolujte připojení a zkuste to znovu.',
   },
 } satisfies Catalog<EnCatalog>;

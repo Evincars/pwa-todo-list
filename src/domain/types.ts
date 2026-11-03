@@ -15,7 +15,8 @@ export type ReminderId = Brand<string, 'ReminderId'>;
 /** ISO-8601 timestamp string, e.g. `2026-11-02T18:00:00.000Z`. */
 export type ISODateString = string;
 
-export type AuthProviderId = 'google' | 'apple';
+export const AUTH_PROVIDERS = ['google', 'facebook', 'apple'] as const;
+export type AuthProviderId = (typeof AUTH_PROVIDERS)[number];
 
 export interface UserProfile {
   id: UserId;

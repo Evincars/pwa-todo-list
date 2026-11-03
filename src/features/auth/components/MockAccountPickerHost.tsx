@@ -7,7 +7,7 @@ import { OptionList, ResponsiveModal, UserAvatar } from '@/shared/ui';
 import { useAccountPickerStore } from '../accountPickerStore';
 import { DEMO_ACCOUNTS } from '../demoAccounts';
 import { PROVIDER_LABEL } from './ProviderButton';
-import { AppleLogo, GoogleLogo } from './ProviderLogos';
+import { ProviderLogo } from './ProviderLogos';
 
 interface CustomAccountForm {
   displayName: string;
@@ -49,7 +49,7 @@ export const MockAccountPickerHost = () => {
       size="sm"
       title={
         <Group gap="xs">
-          {provider === 'google' ? <GoogleLogo /> : <AppleLogo />}
+          <ProviderLogo provider={provider} />
           <Text fw={600}>{t('auth.signInWith', { provider: PROVIDER_LABEL[provider] })}</Text>
           <Badge size="xs" variant="light" color="gray">
             {t('auth.mock')}
@@ -62,7 +62,7 @@ export const MockAccountPickerHost = () => {
           <Stack>
             <TextInput label={t('auth.name')} placeholder={t('auth.namePlaceholder')} data-autofocus {...form.getInputProps('displayName')} />
             <TextInput label={t('auth.email')} placeholder={t('auth.emailPlaceholder')} type="email" {...form.getInputProps('email')} />
-            {provider === 'google' && (
+            {provider !== 'apple' && (
               <TextInput
                 label={t('auth.photo')}
                 placeholder="https://…"

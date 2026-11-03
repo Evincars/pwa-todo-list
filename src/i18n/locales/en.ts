@@ -82,7 +82,7 @@ export const en = {
     emailPlaceholder: 'jane@example.com',
     emailInvalid: 'Enter a valid e-mail',
     photo: 'Profile photo URL (optional)',
-    photoHint: 'Google shares your profile photo. Apple never does, so your initials are used instead.',
+    photoHint: 'Google and Facebook share your profile photo. Apple never does, so your initials are used instead.',
     signOut: 'Sign out',
   },
   access: {
@@ -545,6 +545,7 @@ export const en = {
     unauthorizedDomain: 'Sign-in is not allowed on this domain yet – add it to the Firebase authorized domains.',
     providerDisabled: 'This sign-in method is not enabled.',
     popupBlocked: 'The sign-in window was blocked. Allow pop-ups for this site and try again.',
+    accountExistsWithOtherProvider: 'This e-mail already has an account with another sign-in method. Use that one (e.g. Google) instead.',
     offline: 'You are offline. Check your connection and try again.',
   },
 };

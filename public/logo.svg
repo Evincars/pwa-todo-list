@@ -1,13 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#4c6ef5"/>
-      <stop offset="1" stop-color="#7950f2"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffa94d"/>
+      <stop offset="1" stop-color="#f76707"/>
+    </linearGradient>
+    <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#fff1e0"/>
     </linearGradient>
   </defs>
-  <rect width="512" height="512" rx="112" fill="url(#g)"/>
-  <rect x="120" y="150" width="272" height="44" rx="22" fill="#fff" opacity=".35"/>
-  <rect x="120" y="234" width="272" height="44" rx="22" fill="#fff" opacity=".35"/>
-  <rect x="120" y="318" width="180" height="44" rx="22" fill="#fff" opacity=".35"/>
-  <path d="M150 260l52 52 120-128" fill="none" stroke="#fff" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- chimney -->
+  <rect x="322" y="122" width="46" height="96" rx="12" fill="#ffffff"/>
+  <!-- house body -->
+  <rect x="140" y="222" width="232" height="196" rx="30" fill="url(#wall)"/>
+  <!-- roof -->
+  <path d="M100 250 L256 118 L412 250" fill="none" stroke="#ffffff" stroke-width="52" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- done: check mark as the door -->
+  <path d="M198 322 L242 366 L320 282" fill="none" stroke="#f76707" stroke-width="38" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

@@ -18,7 +18,7 @@ import { TODO_SORT_KEYS, type TodoSortKey } from '@/domain/todoQuery';
 import type { Priority } from '@/domain/types';
 import { useCurrentUser } from '@/features/auth/authStore';
 import { PROVIDER_LABEL } from '@/features/auth/components/ProviderButton';
-import { AppleLogo, GoogleLogo } from '@/features/auth/components/ProviderLogos';
+import { ProviderLogo } from '@/features/auth/components/ProviderLogos';
 import { useSignOut } from '@/features/auth/useSignIn';
 import { useNotificationSupport } from '@/features/reminders/useNotificationSupport';
 import {
@@ -60,7 +60,7 @@ const ProfileCard = () => {
           <Text size="sm" c="dimmed" lineClamp={1}>
             {user.email}
           </Text>
-          <Badge mt={4} size="sm" variant="default" leftSection={user.provider === 'google' ? <GoogleLogo width={12} height={12} /> : <AppleLogo width={10} height={10} />}>
+          <Badge mt={4} size="sm" variant="default" leftSection={<ProviderLogo provider={user.provider} size={12} />}>
             {PROVIDER_LABEL[user.provider]}
           </Badge>
         </div>

@@ -5,7 +5,7 @@ declare const __APP_VERSION__: string;
 
 interface ImportMetaEnv {
   readonly VITE_DATA_BACKEND?: 'firebase' | 'local';
-  /** Comma-separated `AuthProviderId`s, e.g. `google,apple`. */
+  /** Comma-separated `AuthProviderId`s, e.g. `google,facebook` (Apple is implemented but hidden). */
   readonly VITE_AUTH_PROVIDERS?: string;
   readonly VITE_FIREBASE_API_KEY?: string;
   readonly VITE_FIREBASE_AUTH_DOMAIN?: string;

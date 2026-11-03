@@ -37,6 +37,7 @@ export type AppErrorReason =
   | 'unauthorizedDomain'
   | 'providerDisabled'
   | 'popupBlocked'
+  | 'accountExistsWithOtherProvider'
   | 'offline';
 
 /** Error codes intentionally mirror Firebase error codes to ease the migration. */

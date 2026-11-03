@@ -1,6 +1,6 @@
 # Shared Todo (PWA)
 
-A mobile-first, installable todo app with shared lists, backed by Firebase (Firestore + Google sign-in). The list host invites people, who get **read** access by default. The host can upgrade anyone to **write** or remove them.
+A mobile-first, installable todo app with shared lists, backed by Firebase (Firestore + Google / Facebook sign-in). The list host invites people, who get **read** access by default. The host can upgrade anyone to **write** or remove them.
 
 ## Stack
 
@@ -77,6 +77,10 @@ With the local backend (`npm run dev:local`), each document is one `localStorage
 - `read`: view only
 - E-mail invitations only work for that address and can be used once. Link invitations can be used many times until they are revoked or expire (after 14 days).
 
+## App icon
+
+`public/logo.svg` is the source: an orange rounded square with a house and a check-mark door ("done at home"). `npm run generate-pwa-assets` renders the favicon, the PWA icons (64/192/512), the maskable 512 px icon and the 180 px Apple touch icon (`pwa-assets.config.ts`). The maskable and Apple icons are full-bleed orange, so the OS shapes them without white borders.
+
 ## Translations
 
 Every user-facing string goes through i18next (`useTranslation()` in components, `t()` from `@/i18n` elsewhere). React has no built-in i18n like Angular, and i18next is the most widely used library for it.
@@ -96,7 +100,8 @@ The search box matches task titles fuzzily (`src/lib/fuzzy.ts`). The characters 
 
 - Google returns the account photo (`user.photoURL`), and the app stores it on the profile at every sign-in.
 - Apple Sign-In never shares a photo, so initials are shown instead. The same initials are the fallback when an image fails to load.
-- In the mock, the Google demo accounts come with bundled portraits (`public/avatars/`), and "Use another account" accepts an optional photo URL.
+- Facebook also shares the profile picture (see the Firebase section).
+- In the mock, the Google and Facebook demo accounts come with bundled portraits (`public/avatars/`), and "Use another account" accepts an optional photo URL.
 
 ## Reminders
 
@@ -123,7 +128,9 @@ The search box matches task titles fuzzily (`src/lib/fuzzy.ts`). The characters 
 
 The data layer talks to Firebase whenever `VITE_DATA_BACKEND=firebase`, which is the default in `.env`. The web config in `.env` identifies the project and is public by design. Access is protected by Auth, the authorized domains and `firestore.rules`.
 
-- **Sign-in:** `FirebaseAuthService` uses `signInWithPopup`. Redirect sign-in doesn't work on hosts other than `*.firebaseapp.com`, such as GitHub Pages. The profile is built from the Firebase user, including the Google photo, so a signed-in session also restores offline. `VITE_AUTH_PROVIDERS` controls which buttons are shown (`google`, `apple`).
+- **Sign-in:** `FirebaseAuthService` uses `signInWithPopup`. Redirect sign-in doesn't work on hosts other than `*.firebaseapp.com`, such as GitHub Pages. The profile is built from the Firebase user, including the Google photo, so a signed-in session also restores offline. `VITE_AUTH_PROVIDERS` controls which buttons are shown (`google`, `facebook`, `apple`). Apple is implemented but hidden by default.
+- **Facebook photo:** Facebook's default `photoURL` is a tiny Graph API URL that needs a token. At sign-in the app resolves a full-size picture with the access token and stores it on the Firebase user. The picture link expires after a while: the next sign-in refreshes it, and initials are shown until then.
+- **One account per e-mail:** Firebase's default. If an address already signed in with Google, signing in with Facebook using the same e-mail shows a message asking the person to use Google.
 - **Firestore:** `src/services/firebase/Firestore*Service.ts` uses a persistent multi-tab cache (works offline, writes sync when back online) and `onSnapshot` for live updates. Membership changes use field paths and `arrayUnion` / `arrayRemove`.
 - **Joining without a Cloud Function:**
   - The invitee writes themselves into `list.members` in one batch with the invitation update.
@@ -138,7 +145,13 @@ The data layer talks to Firebase whenever `VITE_DATA_BACKEND=firebase`, which is
 2. **Authentication → Settings → Authorized domains:** add `evincars.github.io`. `localhost` is already there for `npm run dev`.
 3. **Firestore rules:** run `npm run deploy:rules` (Firebase CLI, `firebase login`), or paste `firestore.rules` into Firestore → Rules → Publish.
 4. Optional: in Google Cloud console → APIs & Services → Credentials, restrict the browser API key to your domains.
-5. Apple sign-in needs an Apple Developer account (Services ID, key). Then enable "Apple" in Firebase Auth and set `VITE_AUTH_PROVIDERS=google,apple`.
+5. **Facebook login:**
+   1. At [developers.facebook.com](https://developers.facebook.com/apps), create an app of the type "Authenticate and request data from users with Facebook Login".
+   2. Firebase → Authentication → Sign-in method → Facebook → Enable. Paste the app's **App ID** and **App secret** (Facebook app → App settings → Basic).
+   3. Facebook app → Facebook Login → Settings → **Valid OAuth Redirect URIs**: add `https://pwa-todo-lists.firebaseapp.com/__/auth/handler`. This is the URL Firebase shows on the Facebook provider page.
+   4. Facebook app → App settings → Basic: add the **App domains** `pwa-todo-lists.firebaseapp.com` and `evincars.github.io`, and a **Privacy policy URL** (required to go Live).
+   5. While the app is in **Development** mode, only people with a role in the app (admins, developers, testers) can sign in. Switch it to **Live** for everyone.
+6. Apple sign-in (hidden) needs an Apple Developer account (Services ID, key). Then enable "Apple" in Firebase Auth and add `apple` to `VITE_AUTH_PROVIDERS`.
 
 ## Deployment (GitHub Pages)
 

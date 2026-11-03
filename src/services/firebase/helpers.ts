@@ -38,6 +38,8 @@ const ERROR_MAP: Record<string, [AppErrorCode, AppErrorReason]> = {
   'auth/cancelled-popup-request': ['cancelled', 'signInCancelled'],
   'auth/user-cancelled': ['cancelled', 'signInCancelled'],
   'auth/popup-blocked': ['failed-precondition', 'popupBlocked'],
+  // One account per e-mail: the same address already signed in with Google (or vice versa).
+  'auth/account-exists-with-different-credential': ['failed-precondition', 'accountExistsWithOtherProvider'],
   'auth/unauthorized-domain': ['failed-precondition', 'unauthorizedDomain'],
   'auth/operation-not-allowed': ['failed-precondition', 'providerDisabled'],
 };
