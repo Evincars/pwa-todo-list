@@ -482,8 +482,10 @@ export const en = {
     installDescription: 'Add to your home screen for a native feel',
     installButton: 'Install',
     storage: 'Storage',
-    storageDescription: 'Data is saved in this browser. Cloud sync (Firebase) is coming.',
+    storageDescription: 'Data is saved in this browser only.',
+    storageCloudDescription: 'Synced with Firebase – also available offline on this device.',
     local: 'Local',
+    cloud: 'Cloud',
     reset: 'Reset settings',
     erase: 'Erase local data',
     eraseConfirm: {
@@ -540,6 +542,10 @@ export const en = {
     noAccess: 'You do not have access to this list',
     readOnly: 'You have read-only access to this list',
     ownerOnly: 'Only the list owner can do this',
+    unauthorizedDomain: 'Sign-in is not allowed on this domain yet – add it to the Firebase authorized domains.',
+    providerDisabled: 'This sign-in method is not enabled.',
+    popupBlocked: 'The sign-in window was blocked. Allow pop-ups for this site and try again.',
+    offline: 'You are offline. Check your connection and try again.',
   },
 };
 

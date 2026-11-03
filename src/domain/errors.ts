@@ -33,7 +33,11 @@ export type AppErrorReason =
   | 'documentNotFound'
   | 'noAccess'
   | 'readOnly'
-  | 'ownerOnly';
+  | 'ownerOnly'
+  | 'unauthorizedDomain'
+  | 'providerDisabled'
+  | 'popupBlocked'
+  | 'offline';
 
 /** Error codes intentionally mirror Firebase error codes to ease the migration. */
 export class AppError extends Error {

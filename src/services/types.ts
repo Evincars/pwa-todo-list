@@ -34,6 +34,8 @@ export interface SignInResult {
 }
 
 export interface AuthService {
+  /** Sign-in providers enabled for this deployment. */
+  readonly providers: readonly AuthProviderId[];
   /** Resolves the persisted session (Firebase: `auth.authStateReady()`). */
   initialize(): Promise<UserProfile | null>;
   getCurrentUser(): UserProfile | null;
@@ -90,12 +92,15 @@ export interface RemindersService {
   watchMyReminders(onChange: () => void): Unsubscribe;
 }
 
+export type BackendKind = 'local' | 'firebase';
+
 export interface Services {
+  readonly backend: BackendKind;
   auth: AuthService;
   lists: ListsService;
   todos: TodosService;
   invitations: InvitationsService;
   reminders: RemindersService;
-  /** Wipes all locally stored data (dev/demo helper). */
-  resetData(): Promise<void>;
+  /** Wipes all locally stored data – local backend only (dev/demo helper). */
+  resetData?(): Promise<void>;
 }

@@ -1,0 +1,127 @@
+rules_version = '2';
+
+// Server-side version of src/domain/permissions.ts. The client checks the same rules first
+// (for friendly errors); these make them binding. Test: `npm run test:firebase`.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function uid() { return request.auth.uid; }
+    function myEmail() { return request.auth.token.email.lower(); }
+    function changedKeys() { return request.resource.data.diff(resource.data).affectedKeys(); }
+    function listData(listId) { return get(/databases/$(database)/documents/lists/$(listId)).data; }
+    function isMember(list) { return uid() in list.memberIds; }
+    function canWrite(list) {
+      return list.owner.id == uid() || (uid() in list.members && list.members[uid()].permission == 'write');
+    }
+    /** `after` contains everything in `before` plus exactly the current user. */
+    function addsOnlyMe(before, after) {
+      return after.toSet().difference(before.toSet()) == [uid()].toSet() && after.toSet().hasAll(before);
+    }
+
+    // ---------- Profiles & personal reminders ----------
+    match /users/{userId} {
+      allow read, write: if signedIn() && uid() == userId;
+
+      match /reminders/{reminderId} {
+        allow read, delete: if signedIn() && uid() == userId;
+        allow create, update: if signedIn() && uid() == userId
+          && request.resource.data.userId == userId
+          && (
+            (resource != null && changedKeys().hasOnly(['firedAt']))
+            || isMember(listData(request.resource.data.listId))
+          );
+      }
+    }
+
+    // ---------- Lists ----------
+    match /lists/{listId} {
+      function isOwner() { return resource.data.owner.id == uid(); }
+
+      // An invitee adds themselves – only with a pending invitation for this list (and their e-mail).
+      function joining() {
+        let member = request.resource.data.members[uid()];
+        let invitation = get(/databases/$(database)/documents/invitations/$(member.invitationId)).data;
+        return !(uid() in resource.data.memberIds)
+          && changedKeys().hasOnly(['members', 'memberIds', 'updatedAt'])
+          && request.resource.data.members.diff(resource.data.members).affectedKeys().hasOnly([uid()])
+          && addsOnlyMe(resource.data.memberIds, request.resource.data.memberIds)
+          && member.userId == uid()
+          && invitation.listId == listId
+          && invitation.status == 'pending'
+          && member.permission == invitation.permission
+          && (invitation.kind == 'link' || invitation.email == myEmail());
+      }
+
+      // A member removes themselves; the owner can't leave.
+      function leaving() {
+        return isMember(resource.data) && !isOwner()
+          && changedKeys().hasOnly(['members', 'memberIds', 'updatedAt'])
+          && resource.data.members.diff(request.resource.data.members).affectedKeys().hasOnly([uid()])
+          && !(uid() in request.resource.data.members)
+          && addsOnlyMe(request.resource.data.memberIds, resource.data.memberIds);
+      }
+
+      // The owner manages everything except ownership itself.
+      function ownerEdit() {
+        return isOwner()
+          && request.resource.data.owner == resource.data.owner
+          && request.resource.data.id == resource.data.id
+          && uid() in request.resource.data.memberIds;
+      }
+
+      allow get, list: if signedIn() && isMember(resource.data);
+      allow create: if signedIn()
+        && request.resource.data.id == listId
+        && request.resource.data.owner.id == uid()
+        && request.resource.data.memberIds == [uid()]
+        && request.resource.data.members.size() == 0;
+      allow update: if signedIn() && (ownerEdit() || joining() || leaving());
+      allow delete: if signedIn() && isOwner();
+
+      match /todos/{todoId} {
+        allow read: if signedIn() && isMember(listData(listId));
+        allow create: if signedIn() && canWrite(listData(listId))
+          && request.resource.data.id == todoId
+          && request.resource.data.listId == listId
+          && request.resource.data.createdBy.id == uid();
+        allow update: if signedIn() && canWrite(listData(listId))
+          && request.resource.data.id == resource.data.id
+          && request.resource.data.listId == resource.data.listId
+          && request.resource.data.createdBy == resource.data.createdBy;
+        allow delete: if signedIn() && canWrite(listData(listId));
+      }
+    }
+
+    // ---------- Invitations ----------
+    match /invitations/{invitationId} {
+      function isInviter() { return resource.data.invitedBy.id == uid(); }
+
+      // The unguessable id is the capability: whoever has the link may open it.
+      allow get: if signedIn();
+      // Queries must filter on `invitedBy.id` (owner) or `email` (invitee).
+      allow list: if signedIn() && (isInviter() || resource.data.email == myEmail());
+      allow create: if signedIn()
+        && request.resource.data.id == invitationId
+        && request.resource.data.invitedBy.id == uid()
+        && request.resource.data.status == 'pending'
+        && request.resource.data.acceptedBy.size() == 0
+        && listData(request.resource.data.listId).owner.id == uid();
+      allow update: if signedIn() && (
+        // Owner revokes.
+        (isInviter() && changedKeys().hasOnly(['status']) && request.resource.data.status == 'revoked')
+        // Addressee accepts or declines an e-mail invitation (single use).
+        || (resource.data.kind == 'email' && resource.data.email == myEmail() && resource.data.status == 'pending'
+            && changedKeys().hasOnly(['status', 'acceptedBy'])
+            && request.resource.data.status in ['accepted', 'declined']
+            && (request.resource.data.acceptedBy == resource.data.acceptedBy
+                || addsOnlyMe(resource.data.acceptedBy, request.resource.data.acceptedBy)))
+        // Anyone signed in joins through a link (reusable until revoked).
+        || (resource.data.kind == 'link' && resource.data.status == 'pending'
+            && changedKeys().hasOnly(['acceptedBy'])
+            && addsOnlyMe(resource.data.acceptedBy, request.resource.data.acceptedBy))
+      );
+      allow delete: if signedIn() && isInviter();
+    }
+  }
+}

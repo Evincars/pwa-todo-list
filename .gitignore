@@ -5,3 +5,11 @@ dev-dist
 .DS_Store
 coverage
 *.tsbuildinfo
+
+# Local overrides (e.g. VITE_DATA_BACKEND=local)
+.env.local
+.env.*.local
+
+# Firebase emulator / CLI
+.firebase/
+*-debug.log

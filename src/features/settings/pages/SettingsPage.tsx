@@ -119,6 +119,7 @@ export const SettingsPage = () => {
   const settings = useSettingsStore();
   const { setSetting } = settings;
   const services = useServices();
+  const isCloud = services.backend === 'firebase';
   const { canInstall, installed, install } = useInstallPrompt();
 
   const eraseData = async () => {
@@ -128,7 +129,7 @@ export const SettingsPage = () => {
       confirmLabel: t('settings.eraseConfirm.confirm'),
       danger: true,
     });
-    if (ok) await services.resetData();
+    if (ok) await services.resetData?.();
   };
 
   const colorSchemeOptions: { value: ColorSchemePreference; label: ReactNode }[] = [
@@ -285,16 +286,22 @@ export const SettingsPage = () => {
             />
             <SettingsRow
               label={t('settings.storage')}
-              description={t('settings.storageDescription')}
-              control={<Badge variant="default">{t('settings.local')}</Badge>}
+              description={isCloud ? t('settings.storageCloudDescription') : t('settings.storageDescription')}
+              control={
+                <Badge variant={isCloud ? 'light' : 'default'} color={isCloud ? 'teal' : undefined}>
+                  {isCloud ? t('settings.cloud') : t('settings.local')}
+                </Badge>
+              }
             />
             <Group grow>
               <Button variant="default" onClick={settings.resetSettings}>
                 {t('settings.reset')}
               </Button>
-              <Button variant="light" color="red" onClick={() => void eraseData()}>
-                {t('settings.erase')}
-              </Button>
+              {services.resetData && (
+                <Button variant="light" color="red" onClick={() => void eraseData()}>
+                  {t('settings.erase')}
+                </Button>
+              )}
             </Group>
           </SettingsSection>
 

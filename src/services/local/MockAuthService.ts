@@ -3,7 +3,7 @@ import type { AuthProviderId, UserId, UserProfile } from '@/domain/types';
 import type { DocumentStore } from '../storage/DocumentStore';
 import type { AuthService, SignInResult, Unsubscribe } from '../types';
 import { paths } from './collections';
-import { nowISO } from './session';
+import { nowISO } from '../session';
 
 export interface MockAccount {
   displayName: string;
@@ -34,6 +34,7 @@ export class MockAuthService implements AuthService {
   private currentUser: UserProfile | null = null;
   private readonly listeners = new Set<(user: UserProfile | null) => void>();
   private accountPicker: MockAccountPicker | null = null;
+  readonly providers: readonly AuthProviderId[] = ['google', 'apple'];
 
   constructor(private readonly store: DocumentStore) {}
 

@@ -5,6 +5,7 @@ import type { Invitation } from '@/domain/types';
 import { ListIconView } from '@/features/lists/components/ListIconView';
 import { useTranslation } from '@/i18n';
 import { useAcceptInvitation, useDeclineInvitation, useMyInvitationsQuery } from '../api';
+import { afterSuccess } from '@/lib/mutations';
 
 const InvitationCard = ({ invitation }: { invitation: Invitation }) => {
   const { t } = useTranslation();
@@ -30,9 +31,7 @@ const InvitationCard = ({ invitation }: { invitation: Invitation }) => {
               size="xs"
               loading={accept.isPending}
               onClick={() =>
-                accept.mutate(invitation.id, {
-                  onSuccess: (list) => void navigate({ to: '/lists/$listId', params: { listId: list.id } }),
-                })
+                afterSuccess(accept.mutateAsync(invitation.id), (list) => navigate({ to: '/lists/$listId', params: { listId: list.id } }))
               }
             >
               {t('invitations.join')}

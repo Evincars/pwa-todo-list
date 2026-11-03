@@ -6,7 +6,7 @@ import { toUserSummary } from '@/domain/types';
 import type { DocumentStore } from '../storage/DocumentStore';
 import type { AuthService, TodosService } from '../types';
 import { paths } from './collections';
-import { nowISO, requireUser } from './session';
+import { nowISO, requireUser } from '../session';
 
 export class LocalTodosService implements TodosService {
   constructor(

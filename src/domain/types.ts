@@ -41,6 +41,8 @@ export interface ListMember {
   permission: MemberPermission;
   joinedAt: ISODateString;
   invitedBy: UserId;
+  /** Invitation used to join – Firestore rules verify it when a member adds themselves. */
+  invitationId?: InvitationId;
 }
 
 export interface UserSummary {

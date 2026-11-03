@@ -486,8 +486,10 @@ export const cs = {
     installDescription: 'Přidejte si ji na plochu pro nativní pocit',
     installButton: 'Instalovat',
     storage: 'Úložiště',
-    storageDescription: 'Data se ukládají v tomto prohlížeči. Synchronizace přes cloud (Firebase) se připravuje.',
+    storageDescription: 'Data se ukládají jen v tomto prohlížeči.',
+    storageCloudDescription: 'Synchronizováno přes Firebase – v tomto zařízení dostupné i offline.',
     local: 'Místní',
+    cloud: 'Cloud',
     reset: 'Obnovit nastavení',
     erase: 'Smazat místní data',
     eraseConfirm: {
@@ -544,5 +546,9 @@ export const cs = {
     noAccess: 'K tomuto seznamu nemáte přístup',
     readOnly: 'K tomuto seznamu máte přístup jen pro čtení',
     ownerOnly: 'Tohle může udělat jen vlastník seznamu',
+    unauthorizedDomain: 'Přihlášení z této domény zatím není povolené – přidejte ji mezi autorizované domény ve Firebase.',
+    providerDisabled: 'Tento způsob přihlášení není povolený.',
+    popupBlocked: 'Přihlašovací okno bylo zablokováno. Povolte pro tento web vyskakovací okna a zkuste to znovu.',
+    offline: 'Jste offline. Zkontrolujte připojení a zkuste to znovu.',
   },
 } satisfies Catalog<EnCatalog>;

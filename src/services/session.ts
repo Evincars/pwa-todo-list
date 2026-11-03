@@ -1,6 +1,6 @@
 import { AppError } from '@/domain/errors';
 import type { UserProfile } from '@/domain/types';
-import type { AuthService } from '../types';
+import type { AuthService } from './types';
 
 export const requireUser = (auth: AuthService): UserProfile => {
   const user = auth.getCurrentUser();

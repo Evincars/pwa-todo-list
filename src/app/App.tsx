@@ -25,7 +25,7 @@ export const App = ({ router, queryClient, services }: AppProps) => (
       <AppThemeProvider>
         <RouterProvider router={router} />
         <ConfirmDialogHost />
-        <MockAccountPickerHost />
+        {services.backend === 'local' && <MockAccountPickerHost />}
         <ReloadPrompt />
       </AppThemeProvider>
       <Suspense>

@@ -27,6 +27,7 @@ import dayjs from 'dayjs';
 import { confirm, ResponsiveModal, UserAvatar, type AvatarUser } from '@/shared/ui';
 import { useLeaveList, useRemoveMember, useSetMemberPermission } from '../api';
 import { PERMISSIONS, PermissionSelect } from './PermissionSelect';
+import { afterSuccess } from '@/lib/mutations';
 
 export interface ShareSheetProps {
   list: TodoList;
@@ -194,7 +195,7 @@ export const ShareSheet = ({ list, opened, onClose }: ShareSheetProps) => {
       confirmLabel: t('common.leave'),
       danger: true,
     });
-    if (ok) leave.mutate(list.id, { onSuccess: () => void navigate({ to: '/', replace: true }) });
+    if (ok) afterSuccess(leave.mutateAsync(list.id), () => navigate({ to: '/', replace: true }));
   };
 
   return (

@@ -10,6 +10,7 @@ import { useServices } from '@/services/ServicesContext';
 import { ListIconView } from '@/features/lists/components/ListIconView';
 import { UserAvatar } from '@/shared/ui';
 import { invitationQueryOptions, useAcceptInvitation } from '../api';
+import { afterSuccess } from '@/lib/mutations';
 
 const route = getRouteApi('/_authed/invite/$invitationId');
 
@@ -81,7 +82,7 @@ export const AcceptInvitationPage = () => {
               {t('invitations.openList')}
             </Button>
           ) : (
-            <Button fullWidth size="md" loading={accept.isPending} onClick={() => accept.mutate(data.id, { onSuccess: (list) => openList(list.id) })}>
+            <Button fullWidth size="md" loading={accept.isPending} onClick={() => afterSuccess(accept.mutateAsync(data.id), (list) => openList(list.id))}>
               {t('invitations.joinAs', { name: user.displayName })}
             </Button>
           )}

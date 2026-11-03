@@ -37,6 +37,7 @@ import { TodoCalendarView } from '../components/TodoCalendarView';
 import { TodoItem } from '../components/TodoItem';
 import { TodoListView } from '../components/TodoListView';
 import { TodoToolbar } from '../components/TodoToolbar';
+import { afterSuccess } from '@/lib/mutations';
 
 const route = getRouteApi('/_authed/lists/$listId');
 const NO_TODOS: Todo[] = [];
@@ -164,7 +165,7 @@ const ListPageContent = ({ list }: { list: TodoList }) => {
       confirmLabel: t('list.deleteConfirm.confirm'),
       danger: true,
     });
-    if (ok) deleteList.mutate(list.id, { onSuccess: () => void navigate({ to: '/', replace: true }) });
+    if (ok) afterSuccess(deleteList.mutateAsync(list.id), () => navigate({ to: '/', replace: true }));
   };
 
   const handleLeave = async () => {
@@ -174,7 +175,7 @@ const ListPageContent = ({ list }: { list: TodoList }) => {
       confirmLabel: t('common.leave'),
       danger: true,
     });
-    if (ok) leaveList.mutate(list.id, { onSuccess: () => void navigate({ to: '/', replace: true }) });
+    if (ok) afterSuccess(leaveList.mutateAsync(list.id), () => navigate({ to: '/', replace: true }));
   };
 
   const isCalendar = prefs.view === 'calendar';

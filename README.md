@@ -1,6 +1,6 @@
 # Shared Todo (PWA)
 
-A mobile-first, installable todo app with shared lists. The list host invites people, who get **read** access by default. The host can upgrade anyone to **write** or remove them.
+A mobile-first, installable todo app with shared lists, backed by Firebase (Firestore + Google sign-in). The list host invites people, who get **read** access by default. The host can upgrade anyone to **write** or remove them.
 
 ## Stack
 
@@ -11,6 +11,7 @@ A mobile-first, installable todo app with shared lists. The list host invites pe
 | Routing        | TanStack Router (file-based, typed search params with zod, hash history) |
 | Server state   | TanStack Query (optimistic mutations, live invalidation)                 |
 | Client state   | Zustand (auth mirror, persisted settings, dialog bridges)                |
+| Backend        | Firebase Auth + Firestore (offline cache, real-time listeners, security rules) |
 | i18n           | i18next + react-i18next (typed keys), dayjs locales – English, Czech     |
 | PWA            | vite-plugin-pwa (Workbox precache, update prompt, install button)        |
 | Tests          | Vitest + jsdom                                                           |
@@ -18,10 +19,15 @@ A mobile-first, installable todo app with shared lists. The list host invites pe
 ## Scripts
 
 ```bash
-npm run dev        # dev server
-npm run build      # typecheck + production build (dist/)
-npm run preview    # serve the build (service worker active)
-npm test           # unit + service integration tests
+npm run dev            # dev server against the real Firebase project
+npm run dev:local      # dev server with localStorage + mock sign-in (no Firebase)
+npm run emulators      # Firestore + Auth emulators (needs the Firebase CLI and Java)
+npm run dev:emulator   # dev server against the emulators – the full stack, fully local
+npm run build          # typecheck + production build (dist/)
+npm run preview        # serve the build (service worker active)
+npm test               # unit + local service integration tests
+npm run test:firebase  # Firestore services + security rules against the emulators
+npm run deploy:rules   # publish firestore.rules to the Firebase project
 npm run lint
 ```
 
@@ -36,7 +42,8 @@ src/
     types.ts        AuthService / ListsService / TodosService / InvitationsService
     storage/        DocumentStore (Firestore-shaped) + LocalStorageDocumentStore
     local/          mock auth + local services (enforce the same rules Firestore will)
-    createServices.ts  composition root, the single swap point
+    firebase/       Firebase Auth + Firestore implementations
+    createServices.ts  composition root – picks the backend (`VITE_DATA_BACKEND`)
   features/       auth, lists, todos, invitations, settings, onboarding
                   (each has api.ts with query/mutation hooks, components/, pages/)
   shared/ui/      generic, reusable UI wrappers (see below)
@@ -49,7 +56,7 @@ src/
 
 `ResponsiveOverlay` (popover on desktop, bottom sheet on mobile), `ResponsiveModal`, `BottomSheet`, `OptionList<T>`, `SelectMenu<T>`, `SegmentedField<T>`, `SwatchPicker<T>`, `TilePicker<T>` (grouped icon/emoji grid), `ClockTimePicker` (Material / MS To Do analog dial), `AgendaCalendar` (week strip ↔ month grid with per-day count bubbles), `CheckCircle`, `QueryView<T>` (pending/error/data switch), `PageHeader`, `SettingsSection`/`SettingsRow`, `UserAvatar`/`AvatarStack`, and a promise-based `confirm()` dialog.
 
-## Data model (Firestore-compatible)
+## Data model (Firestore)
 
 ```
 users/{uid}                        UserProfile
@@ -61,9 +68,9 @@ users/{uid}/reminders/{listId_todoId}  Reminder { listId, todoId, remindAt, fire
 
 A list `icon` is either an emoji or a vector glyph token such as `glyph:radioactive`. The glyph registry is in `src/features/lists/listIcons.tsx`. Older local data that stored `emoji` is migrated when the app starts (`src/services/local/migrations.ts`).
 
-Locally, each document is one `localStorage` key: `shared-todo/v1:<path>`. Changes are broadcast within the tab and across tabs (`storage` event), which stands in for Firestore real-time listeners.
+With the local backend (`npm run dev:local`), each document is one `localStorage` key: `shared-todo/v1:<path>`, and changes are broadcast across tabs as a stand-in for Firestore listeners.
 
-**Access rules** live in `src/domain/permissions.ts`. The UI and the services both use them:
+**Access rules** live in `src/domain/permissions.ts`, which both the UI and the services use. `firestore.rules` enforces them on the server:
 
 - owner: everything, including inviting, changing permissions, removing members and deleting the list
 - `write`: create, edit, complete and delete todos
@@ -110,18 +117,28 @@ The search box matches task titles fuzzily (`src/lib/fuzzy.ts`). The characters 
   - When the app is in the background, it shows a system notification (`ServiceWorkerRegistration.showNotification`). When the app is on screen, it shows an in-app toast.
   - Tapping a notification opens the task. The `notificationclick` handler is in `public/sw-notifications.js`.
   - The app asks for notification permission the first time someone sets a reminder. On iOS 16.4+, notifications only work after the app is added to the Home Screen.
-- **With Firebase:** the in-app scheduler only works while the app is running. To deliver reminders when the app is closed, store FCM tokens per user. A scheduled Cloud Function then queries `collectionGroup('reminders').where('firedAt', '==', null).where('remindAt', '<=', now)`, sends a web push for each one, and sets `firedAt`.
+- **Closed app:** the in-app scheduler only works while the app is running. To deliver reminders when the app is closed, store FCM tokens per user. A scheduled Cloud Function then queries `collectionGroup('reminders').where('firedAt', '==', null).where('remindAt', '<=', now)`, sends a web push for each one, and sets `firedAt`.
 
-## Migrating to Firebase
+## Firebase
 
-1. Implement `Services` from `src/services/types.ts`:
-   - `FirebaseAuthService`: `signInWithPopup` with `GoogleAuthProvider` / `OAuthProvider('apple.com')`. `initialize()` → `auth.authStateReady()`. `isNewUser` → `getAdditionalUserInfo(result)`.
-   - Firestore services: either a `FirestoreDocumentStore` that implements `DocumentStore` (the methods map 1:1 to `getDoc`/`setDoc`/`updateDoc`/`deleteDoc`/`query+where`/`writeBatch`/`onSnapshot`), or dedicated Firestore services.
-2. Turn `src/domain/permissions.ts` into `firestore.rules`.
-3. Move `acceptInvitation` to a callable Cloud Function, because the invitee can't write `list.members` yet. Also add the reminder push function described above.
-4. Switch the export in `src/services/createServices.ts`. Then delete `MockAccountPickerHost`, `accountPickerStore` and `demoAccounts`.
+The data layer talks to Firebase whenever `VITE_DATA_BACKEND=firebase`, which is the default in `.env`. The web config in `.env` identifies the project and is public by design. Access is protected by Auth, the authorized domains and `firestore.rules`.
 
-No feature code needs to change.
+- **Sign-in:** `FirebaseAuthService` uses `signInWithPopup`. Redirect sign-in doesn't work on hosts other than `*.firebaseapp.com`, such as GitHub Pages. The profile is built from the Firebase user, including the Google photo, so a signed-in session also restores offline. `VITE_AUTH_PROVIDERS` controls which buttons are shown (`google`, `apple`).
+- **Firestore:** `src/services/firebase/Firestore*Service.ts` uses a persistent multi-tab cache (works offline, writes sync when back online) and `onSnapshot` for live updates. Membership changes use field paths and `arrayUnion` / `arrayRemove`.
+- **Joining without a Cloud Function:**
+  - The invitee writes themselves into `list.members` in one batch with the invitation update.
+  - `firestore.rules` allows it only when `members.<uid>.invitationId` points to a pending invitation for that list, with the same permission and, for e-mail invitations, the signed-in e-mail.
+  - This keeps the project on the free Spark plan.
+  - Known gap: invitation expiry is checked only by the client, because dates are stored as ISO strings. Revoking an invitation is enforced by the rules.
+- **Tests:** `npm run test:firebase` runs the real services against the Firestore and Auth emulators under the `demo-` project namespace. It includes attacks the UI never makes, such as forged joins, a member raising their own permission, and reading someone else's reminders. With permissive rules all four tests fail, so they really exercise the rules.
+
+### Setup checklist (Firebase console, project `pwa-todo-lists`)
+
+1. **Authentication → Sign-in method → Google → Enable.** Pick the public-facing name (e.g. "Shared Todo") and the support e-mail.
+2. **Authentication → Settings → Authorized domains:** add `evincars.github.io`. `localhost` is already there for `npm run dev`.
+3. **Firestore rules:** run `npm run deploy:rules` (Firebase CLI, `firebase login`), or paste `firestore.rules` into Firestore → Rules → Publish.
+4. Optional: in Google Cloud console → APIs & Services → Credentials, restrict the browser API key to your domains.
+5. Apple sign-in needs an Apple Developer account (Services ID, key). Then enable "Apple" in Firebase Auth and set `VITE_AUTH_PROVIDERS=google,apple`.
 
 ## Deployment (GitHub Pages)
 
@@ -136,4 +153,4 @@ One-time setup: in the repository, go to Settings → Pages → Source and choos
 
 ## Trying out sharing locally
 
-Everything is stored in one browser, so you can try sharing by switching accounts. Sign in as *Alex*, open a list, then go to the members icon → invite `sam.rivera@gmail.com`. Sign out, sign in as *Sam*, accept the invitation (you have read-only access), then switch back to Alex and grant edit access.
+With Firebase, use two browsers (or a private window) and two Google accounts. Without Firebase, run `npm run dev:local`: everything is stored in one browser, so you can try sharing by switching accounts. Sign in as *Alex*, open a list, then go to the members icon → invite `sam.rivera@gmail.com`. Sign out, sign in as *Sam*, accept the invitation (you have read-only access), then switch back to Alex and grant edit access.

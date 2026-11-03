@@ -16,5 +16,5 @@
     "noUnusedParameters": true,
     "resolveJsonModule": true
   },
-  "include": ["vite.config.ts", "pwa-assets.config.ts"]
+  "include": ["vite.config.ts", "vitest.firebase.config.ts", "pwa-assets.config.ts"]
 }

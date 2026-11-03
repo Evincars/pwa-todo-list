@@ -5,10 +5,12 @@ import { getRouteApi, useNavigate } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import type { AuthProviderId } from '@/domain/types';
 import { useTranslation } from '@/i18n';
+import { useServices } from '@/services/ServicesContext';
 import { AuthorCredit } from '@/shared/ui';
 import { ProviderButton } from '../components/ProviderButton';
 import { useSignIn } from '../useSignIn';
 import classes from './LoginPage.module.css';
+import { afterSuccess } from '@/lib/mutations';
 
 const route = getRouteApi('/login');
 
@@ -23,9 +25,10 @@ export const LoginPage = () => {
   const navigate = useNavigate();
   const signIn = useSignIn();
   const { t } = useTranslation();
+  const { auth, backend } = useServices();
 
   const handleSignIn = (provider: AuthProviderId) =>
-    signIn.mutate(provider, { onSuccess: () => void navigate({ href: redirect ?? '/', replace: true }) });
+    afterSuccess(signIn.mutateAsync(provider), () => navigate({ href: redirect ?? '/', replace: true }));
 
   return (
     <div className={classes.root}>
@@ -54,14 +57,22 @@ export const LoginPage = () => {
         </Stack>
 
         <Stack gap="sm">
-          <ProviderButton provider="google" onClick={() => handleSignIn('google')} loading={signIn.isPending && signIn.variables === 'google'} />
-          <ProviderButton provider="apple" onClick={() => handleSignIn('apple')} loading={signIn.isPending && signIn.variables === 'apple'} />
+          {auth.providers.map((provider) => (
+            <ProviderButton
+              key={provider}
+              provider={provider}
+              onClick={() => handleSignIn(provider)}
+              loading={signIn.isPending && signIn.variables === provider}
+            />
+          ))}
         </Stack>
 
         <Stack gap={4} align="center">
-          <Text size="xs" c="dimmed" ta="center">
-            {t('auth.demoNote')}
-          </Text>
+          {backend === 'local' && (
+            <Text size="xs" c="dimmed" ta="center">
+              {t('auth.demoNote')}
+            </Text>
+          )}
           <AuthorCredit />
         </Stack>
       </Stack>

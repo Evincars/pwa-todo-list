@@ -16,16 +16,11 @@ import type { DocumentStore } from '../storage/DocumentStore';
 import { where } from '../storage/DocumentStore';
 import type { AuthService, InvitationsService } from '../types';
 import { paths } from './collections';
-import { nowISO, requireUser } from './session';
+import { nowISO, requireUser } from '../session';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const INVITATION_TTL_DAYS = 14;
 
-/**
- * NOTE (Firebase): accepting an invitation adds the invitee to `list.members`, which they
- * are not allowed to write yet. In production this should be a callable Cloud Function
- * (or a rule validating `existsAfter(/invitations/$(id))`).
- */
 export class LocalInvitationsService implements InvitationsService {
   constructor(
     private readonly store: DocumentStore,
@@ -115,6 +110,7 @@ export class LocalInvitationsService implements InvitationsService {
       permission: invitation.permission,
       joinedAt: nowISO(),
       invitedBy: invitation.invitedBy.id,
+      invitationId: invitation.id,
     };
     const updatedList: TodoList = {
       ...list,

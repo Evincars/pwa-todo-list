@@ -4,7 +4,7 @@ import { reminderIdOf, type ISODateString, type ListId, type Reminder, type Remi
 import type { DocumentStore } from '../storage/DocumentStore';
 import type { AuthService, RemindersService } from '../types';
 import { paths } from './collections';
-import { nowISO, requireUser } from './session';
+import { nowISO, requireUser } from '../session';
 
 /**
  * Reminders live under the user (`users/{uid}/reminders`), so security rules stay trivial:

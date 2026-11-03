@@ -16,7 +16,7 @@ import type { BatchOperation, DocumentStore } from '../storage/DocumentStore';
 import { where } from '../storage/DocumentStore';
 import type { AuthService, ListsService } from '../types';
 import { paths } from './collections';
-import { nowISO, requireUser } from './session';
+import { nowISO, requireUser } from '../session';
 
 export class LocalListsService implements ListsService {
   constructor(

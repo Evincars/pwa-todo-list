@@ -12,7 +12,7 @@ import { bindAuthStore } from './features/auth/authStore';
 import { useSettingsStore } from './features/settings/settingsStore';
 import { applyLanguage } from './i18n';
 import { createQueryClient } from './lib/queryClient';
-import { services } from './services/createServices';
+import { createServices, isLocalServices } from './services/createServices';
 
 const bootstrap = async () => {
   // Before the first render, so nothing flashes in the wrong language.
@@ -20,11 +20,12 @@ const bootstrap = async () => {
   useSettingsStore.subscribe((state, previous) => state.language !== previous.language && applyLanguage(state.language));
   window.addEventListener('languagechange', () => applyLanguage(useSettingsStore.getState().language));
 
+  const services = await createServices();
   const queryClient = createQueryClient();
   const router = createAppRouter({ queryClient, services });
 
   // Mock-only: the "provider popup" is a React dialog driven by this store.
-  services.auth.setAccountPicker(useAccountPickerStore.getState().pick);
+  if (isLocalServices(services)) services.auth.setAccountPicker(useAccountPickerStore.getState().pick);
   await bindAuthStore(services.auth);
 
   services.auth.onAuthStateChanged((user) => {
